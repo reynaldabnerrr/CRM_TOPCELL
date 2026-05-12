@@ -1,9 +1,28 @@
 @props([])
 
-<div class="flex">
+<div class="flex h-screen" x-data="{ sidebarOpen: false }">
+    <!-- Mobile Menu Button -->
+    <button @click="sidebarOpen = !sidebarOpen" x-show="!sidebarOpen" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-red-600 text-white rounded hover:bg-red-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div @click="sidebarOpen = false" x-show="sidebarOpen" x-transition class="fixed inset-0 bg-black/50 md:hidden z-30" style="display: none;"></div>
+
     <!-- Sidebar -->
     <aside
-        class="fixed left-0 top-0 w-64 h-screen bg-gradient-to-b from-gray-50 to-gray-100 border-r border-gray-300 shadow-xl">
+        class="fixed md:static left-0 top-0 w-64 h-screen bg-gradient-to-b from-gray-50 to-gray-100 border-r border-gray-300 shadow-xl z-40 transform transition-transform duration-300 md:translate-x-0"
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+        
+        <!-- Close Button (Mobile Only) -->
+        <button @click="sidebarOpen = false" class="md:hidden absolute top-4 right-4 z-50 p-2 text-gray-600 hover:text-red-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
         <!-- Logo Section -->
         <div class="p-6 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-br-2xl shadow-lg">
             <a href="{{ route('dashboard') }}" class="flex items-center space-x-3">
@@ -18,7 +37,7 @@
         <!-- Navigation Menu -->
         <nav class="mt-8 px-3 space-y-3">
             <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest px-4 mb-4">Menu</p>
-            <a href="{{ route('dashboard') }}"
+            <a href="{{ route('dashboard') }}" @click="sidebarOpen = false"
                 class="flex items-center px-4 py-3 rounded-xl {{ request()->routeIs('dashboard') ? 'bg-red-50 text-red-700 shadow-md border-l-4 border-red-600' : 'text-gray-700 hover:bg-white hover:shadow-md transition' }} font-medium">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -46,7 +65,7 @@
             </div>
 
             <div class="space-y-2">
-                <a href="{{ route('profile.edit') }}"
+                <a href="{{ route('profile.edit') }}" @click="sidebarOpen = false"
                     class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-700 text-sm transition font-medium">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -70,7 +89,7 @@
     </aside>
 
     <!-- Main Content Area -->
-    <div class="ml-64 w-full">
+    <div class="w-full flex-1 overflow-auto pt-16 md:pt-0">
         {{ $slot }}
     </div>
 </div>
