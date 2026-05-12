@@ -17,10 +17,8 @@
         <!-- Alpine.js -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            @include('layouts.navigation')
-
+    <body class="font-sans antialiased bg-gray-100">
+        <x-sidebar>
             <!-- Page Heading -->
             @isset($header)
                 <header class="bg-white shadow">
@@ -31,9 +29,9 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main class="p-6">
                 {{ $slot }}
             </main>
-        </div>
+        </x-sidebar>
     </body>
 </html>
