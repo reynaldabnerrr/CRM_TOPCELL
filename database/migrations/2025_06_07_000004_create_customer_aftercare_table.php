@@ -13,17 +13,17 @@ return new class extends Migration
     {
         Schema::create('customer_aftercare', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id')->constrained('sales')->onDelete('cascade');
-            $table->string('customer_name');
-            $table->string('phone_number');
+            $table->foreignId('sale_id')->nullable()->constrained('sales')->onDelete('cascade');
+            $table->string('customer_name')->nullable();
+            $table->string('phone_number')->nullable();
             $table->enum('type', [
                 'Aftercare h+1',
                 'Followup h+7',
                 'Followup h+1bulan'
-            ]);
-            $table->date('scheduled_date');
+            ])->nullable();
+            $table->date('scheduled_date')->nullable();
             $table->date('done_date')->nullable();
-            $table->string('status')->default('pending'); // pending, completed, skipped
+            $table->string('status')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });

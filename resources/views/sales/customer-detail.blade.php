@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<x-app-layout>
 <div class="py-12">
     <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
         <!-- Back Button -->
@@ -266,4 +264,4 @@ document.getElementById('followupModal').addEventListener('click', function(e) {
     if (e.target === this) closeFollowupModal();
 });
 </script>
-@endsection
+</x-app-layout>
