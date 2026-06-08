@@ -11,7 +11,42 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $today = \Carbon\Carbon::now()->toDateString();
+
+    $followupToday = \App\Models\Sale::where(function ($query) use ($today) {
+        $query->where(function ($q) use ($today) {
+            $q->where('followup_h1_date', $today)->where('followup_h1_status', 'pending');
+        })->orWhere(function ($q) use ($today) {
+            $q->where('followup_h7_date', $today)->where('followup_h7_status', 'pending');
+        })->orWhere(function ($q) use ($today) {
+            $q->where('followup_1month_date', $today)->where('followup_1month_status', 'pending');
+        });
+    })->get();
+
+    $overdueFollowups = \App\Models\Sale::where(function ($query) use ($today) {
+        $query->where(function ($q) use ($today) {
+            $q->where('followup_h1_date', '<', $today)->where('followup_h1_status', 'pending');
+        })->orWhere(function ($q) use ($today) {
+            $q->where('followup_h7_date', '<', $today)->where('followup_h7_status', 'pending');
+        })->orWhere(function ($q) use ($today) {
+            $q->where('followup_1month_date', '<', $today)->where('followup_1month_status', 'pending');
+        });
+    })->count();
+
+    $stats = [
+        'total_sales'           => \App\Models\Sale::count(),
+        'today_followups'       => $followupToday->count(),
+        'total_pending_customers' => \App\Models\PendingCustomer::count(),
+        'pending_h1'            => \App\Models\Sale::where('followup_h1_status', 'pending')->count(),
+        'pending_h7'            => \App\Models\Sale::where('followup_h7_status', 'pending')->count(),
+        'pending_1month'        => \App\Models\Sale::where('followup_1month_status', 'pending')->count(),
+        'overdue'               => $overdueFollowups,
+        'done_total'            => \App\Models\Sale::where('followup_h1_status', 'done')
+                                        ->orWhere('followup_h7_status', 'done')
+                                        ->orWhere('followup_1month_status', 'done')->count(),
+    ];
+
+    return view('dashboard', compact('stats', 'followupToday'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {

@@ -1,6 +1,40 @@
-<aside class="fixed left-0 top-0 w-64 h-screen bg-gray-900 text-white shadow-lg">
+<div x-data="{ sidebarOpen: false }" class="relative">
+
+    <!-- Mobile overlay -->
+    <div
+        x-show="sidebarOpen"
+        @click="sidebarOpen = false"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+        style="display: none;"
+    ></div>
+
+    <!-- Mobile top bar -->
+    <div class="md:hidden fixed top-0 left-0 right-0 h-14 bg-gray-900 text-white flex items-center px-4 z-10 shadow-lg">
+        <button @click="sidebarOpen = !sidebarOpen" class="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path :class="{'hidden': sidebarOpen, 'inline-flex': !sidebarOpen}" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                <path :class="{'hidden': !sidebarOpen, 'inline-flex': sidebarOpen}" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <a href="{{ route('dashboard') }}" class="ml-3 flex items-center space-x-2">
+            <x-application-logo class="h-8 w-8 rounded-full border border-gray-300 object-cover" />
+            <span class="text-lg font-bold">{{ config('app.name', 'TOP CELL') }}</span>
+        </a>
+    </div>
+
+    <!-- Sidebar -->
+    <aside
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+        class="fixed left-0 top-0 w-64 h-screen bg-gray-900 text-white shadow-lg z-30 transition-transform duration-200 ease-in-out md:translate-x-0 flex flex-col"
+    >
     <!-- Logo Section -->
-    <div class="p-6 border-b border-gray-700">
+    <div class="flex-shrink-0 p-6 border-b border-gray-700">
         <a href="{{ route('dashboard') }}" class="flex items-center space-x-3">
             <x-application-logo class="h-10 w-10 rounded-full border border-gray-300 object-cover" />
             <span class="text-xl font-bold">{{ config('app.name', 'TOP CELL') }}</span>
@@ -8,7 +42,7 @@
     </div>
 
     <!-- Navigation Menu -->
-    <nav class="mt-6 px-3 space-y-2">
+    <nav class="flex-1 overflow-y-auto mt-6 px-3 space-y-2 pb-4">
         <a href="{{ route('dashboard') }}"
             class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('dashboard') ? 'bg-indigo-600' : 'hover:bg-gray-800' }} transition">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +105,7 @@
     </nav>
 
     <!-- User Section -->
-    <div class="absolute bottom-0 left-0 right-0 border-t border-gray-700 p-4">
+    <div class="flex-shrink-0 border-t border-gray-700 p-4">
         <div class="flex items-center space-x-3 mb-4">
             <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
                 <span class="text-white font-bold">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
@@ -96,9 +130,11 @@
             </form>
         </div>
     </div>
-</aside>
+    </aside>
 
-<!-- Main Content Area -->
-<div class="ml-64">
-    {{ $slot }}
+    <!-- Main Content Area -->
+    <div class="md:ml-64 pt-14 md:pt-0 min-h-screen">
+        {{ $slot }}
+    </div>
+
 </div>

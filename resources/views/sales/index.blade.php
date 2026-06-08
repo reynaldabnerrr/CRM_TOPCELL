@@ -1,16 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-2">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Data Penjualan') }}
             </h2>
-            <a href="{{ route('sales.import') }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <a href="{{ route('sales.import') }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
                 + Import Excel
             </a>
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-12">
         <div class="max-w-7xl mx-auto">
             @if (session('success'))
                 <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">

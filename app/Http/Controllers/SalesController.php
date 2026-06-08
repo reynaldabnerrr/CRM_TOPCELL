@@ -16,45 +16,53 @@ class SalesController extends Controller
     public function dashboard(Request $request)
     {
         $today = Carbon::now()->toDateString();
-        
-        // Query untuk mendapatkan followup yang perlu dilakukan hari ini
+        $filter = $request->get('filter', 'all'); // all | h1 | h7 | 1month
+
+        // Query followup hari ini (dengan pengelompokan kondisi yang benar)
         $followupToday = Sale::where(function ($query) use ($today) {
-            $query->where([
-                ['followup_h1_date', '=', $today],
-                ['followup_h1_status', '=', 'pending']
-            ])
-            ->orWhere([
-                ['followup_h7_date', '=', $today],
-                ['followup_h7_status', '=', 'pending']
-            ])
-            ->orWhere([
-                ['followup_1month_date', '=', $today],
-                ['followup_1month_status', '=', 'pending']
-            ]);
+            $query->where(function ($q) use ($today) {
+                $q->where('followup_h1_date', $today)
+                  ->where('followup_h1_status', 'pending');
+            })->orWhere(function ($q) use ($today) {
+                $q->where('followup_h7_date', $today)
+                  ->where('followup_h7_status', 'pending');
+            })->orWhere(function ($q) use ($today) {
+                $q->where('followup_1month_date', $today)
+                  ->where('followup_1month_status', 'pending');
+            });
         })->get();
 
-        // Query untuk mendapatkan semua followup yang pending (belum dikerjakan)
-        $pendingFollowups = Sale::where(function ($query) {
-            $query->where('followup_h1_status', '=', 'pending')
-                ->orWhere('followup_h7_status', '=', 'pending')
-                ->orWhere('followup_1month_status', '=', 'pending');
-        })
-        ->orderBy('invoice_date', 'asc')
-        ->paginate(10);
+        // Query semua pending followup dengan filter
+        $pendingQuery = Sale::query();
+        if ($filter === 'h1') {
+            $pendingQuery->where('followup_h1_status', 'pending');
+        } elseif ($filter === 'h7') {
+            $pendingQuery->where('followup_h7_status', 'pending');
+        } elseif ($filter === '1month') {
+            $pendingQuery->where('followup_1month_status', 'pending');
+        } else {
+            $pendingQuery->where(function ($q) {
+                $q->where('followup_h1_status', 'pending')
+                  ->orWhere('followup_h7_status', 'pending')
+                  ->orWhere('followup_1month_status', 'pending');
+            });
+        }
+        $pendingFollowups = $pendingQuery->orderBy('invoice_date', 'asc')->paginate(10)->withQueryString();
 
         // Statistik
         $stats = [
-            'total_sales' => Sale::count(),
-            'pending_h1' => Sale::where('followup_h1_status', 'pending')->count(),
-            'pending_h7' => Sale::where('followup_h7_status', 'pending')->count(),
-            'pending_1month' => Sale::where('followup_1month_status', 'pending')->count(),
+            'total_sales'   => Sale::count(),
+            'pending_h1'    => Sale::where('followup_h1_status', 'pending')->count(),
+            'pending_h7'    => Sale::where('followup_h7_status', 'pending')->count(),
+            'pending_1month'=> Sale::where('followup_1month_status', 'pending')->count(),
             'today_followups' => $followupToday->count(),
         ];
 
         return view('sales.dashboard', [
-            'followupToday' => $followupToday,
+            'followupToday'    => $followupToday,
             'pendingFollowups' => $pendingFollowups,
-            'stats' => $stats,
+            'stats'            => $stats,
+            'filter'           => $filter,
         ]);
     }
 

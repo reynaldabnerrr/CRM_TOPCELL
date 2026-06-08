@@ -8,8 +8,8 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-2xl mx-auto">
+    <div class="py-4 sm:py-12">
+        <div class="max-w-2xl mx-auto px-3 sm:px-0">
             <div class="bg-white overflow-hidden shadow-sm rounded-lg">
                 <div class="p-6">
                     @if ($errors->any())

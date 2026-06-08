@@ -29,7 +29,7 @@
             @endisset
 
             <!-- Page Content -->
-            <main class="p-6">
+            <main class="p-3 sm:p-6">
                 {{ $slot }}
             </main>
         </x-sidebar>

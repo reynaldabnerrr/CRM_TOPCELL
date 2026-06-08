@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-12">
         <div class="max-w-7xl mx-auto">
             @if (session('success'))
                 <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
@@ -16,7 +16,7 @@
             <!-- Filter By Date -->
             <div class="mb-6">
                 <h3 class="text-sm font-semibold text-gray-700 mb-2">Pilih Tanggal (sebagai "hari ini"):</h3>
-                <div class="flex gap-2 items-center">
+                <div class="flex flex-wrap gap-2 items-center">
                     <input type="date" id="dateFilter" value="{{ $referenceDate->toDateString() }}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <button onclick="filterByDate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Filter
