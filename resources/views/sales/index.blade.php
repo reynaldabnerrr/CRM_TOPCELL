@@ -27,8 +27,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">No. HP</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>
                             </tr>
                         </thead>
@@ -47,13 +46,19 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                         {{ $sale->phone_number }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                        {{ $sale->unit_name ?? '-' }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $sale->status === 'Lunas' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                            {{ $sale->status }}
-                                        </span>
+                                    <td class="px-6 py-4 text-sm text-gray-600">
+                                        @if($sale->items->count() > 0)
+                                            <div class="space-y-1">
+                                                @foreach($sale->items as $item)
+                                                    <div class="text-xs">
+                                                        • {{ $item->item_name }} 
+                                                        <span class="text-gray-500">({{ $item->quantity }} {{ $item->unit }})</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-gray-400">-</span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
                                         <a href="{{ route('sales.show', $sale) }}" class="text-blue-600 hover:text-blue-900">
@@ -63,7 +68,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
                                         Belum ada data penjualan. <a href="{{ route('sales.import') }}" class="text-blue-600 hover:underline">Import Excel sekarang</a>
                                     </td>
                                 </tr>

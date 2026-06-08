@@ -14,17 +14,32 @@ class PendingCustomer extends Model
     protected $fillable = [
         'name',
         'phone_number',
-        'status',
+        'entry_date',
+        'status_id',
         'notes',
-        'last_followup_date',
-        'next_followup_date',
+        'followup_h1_date',
+        'followup_h1_last_date',
+        'followup_h7_date',
+        'followup_h7_last_date',
+        'followup_h1month_date',
+        'followup_h1month_last_date',
     ];
 
     protected function casts(): array
     {
         return [
-            'last_followup_date' => 'date',
-            'next_followup_date' => 'date',
+            'entry_date' => 'date',
+            'followup_h1_date' => 'date',
+            'followup_h1_last_date' => 'date',
+            'followup_h7_date' => 'date',
+            'followup_h7_last_date' => 'date',
+            'followup_h1month_date' => 'date',
+            'followup_h1month_last_date' => 'date',
         ];
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(PendingCustomerStatus::class, 'status_id');
     }
 }

@@ -26,8 +26,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/import', [SalesController::class, 'import'])->name('import');
         Route::post('/import', [SalesController::class, 'importStore'])->name('importStore');
         Route::get('/customer/{phoneNumber}', [SalesController::class, 'customerDetail'])->name('customer-detail');
-        Route::post('/{id}/update-followup', [SalesController::class, 'updateFollowupStatus'])->name('update-followup');
-        Route::get('/{sale}', [SalesController::class, 'show'])->name('show');
+        Route::post('{invoice_number}/update-followup', [SalesController::class, 'updateFollowupStatus'])->name('update-followup')->where('invoice_number', '.*');
+        Route::get('{sale:invoice_number}', [SalesController::class, 'show'])->name('show')->where('sale', '.*');
     });
 
     // Pending Customers Routes
@@ -38,15 +38,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/{pendingCustomer}/edit', [PendingCustomerController::class, 'edit'])->name('edit');
         Route::patch('/{pendingCustomer}', [PendingCustomerController::class, 'update'])->name('update');
         Route::delete('/{pendingCustomer}', [PendingCustomerController::class, 'destroy'])->name('destroy');
+        Route::post('/{pendingCustomer}/update-followup-checkpoint', [PendingCustomerController::class, 'updateFollowupCheckpoint'])->name('update-followup-checkpoint');
     });
 
     // Aftercare Routes
     Route::prefix('aftercare')->name('aftercare.')->group(function () {
         Route::get('/', [CustomerAfterCareController::class, 'index'])->name('index');
-        Route::get('/{aftercare}/edit', [CustomerAfterCareController::class, 'edit'])->name('edit');
-        Route::patch('/{aftercare}', [CustomerAfterCareController::class, 'update'])->name('update');
-        Route::patch('/{aftercare}/complete', [CustomerAfterCareController::class, 'markComplete'])->name('complete');
-        Route::patch('/{aftercare}/skip', [CustomerAfterCareController::class, 'markSkipped'])->name('skip');
+        Route::patch('/{sale}/complete', [CustomerAfterCareController::class, 'markComplete'])->name('complete');
+        Route::patch('/{sale}/skip', [CustomerAfterCareController::class, 'markSkipped'])->name('skip');
     });
 });
 

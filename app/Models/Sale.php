@@ -48,8 +48,8 @@ class Sale extends Model
         ];
     }
 
-    public function aftercareRecords()
+    public function items()
     {
-        return $this->hasMany(CustomerAftercare::class);
+        return $this->hasMany(SaleItem::class, 'invoice_number', 'invoice_number');
     }
 }

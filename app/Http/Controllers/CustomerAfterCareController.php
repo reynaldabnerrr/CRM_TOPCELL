@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CustomerAftercare;
 use App\Models\Sale;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class CustomerAfterCareController extends Controller
 {
@@ -12,65 +12,72 @@ class CustomerAfterCareController extends Controller
     {
         $type = request('type', 'Aftercare h+1');
         $status = request('status', 'pending');
+        $referenceDate = request('date') ? Carbon::parse(request('date')) : Carbon::now();
 
-        $query = CustomerAftercare::query();
+        // Hitung invoice_date yang seharusnya punya aftercare pada reference_date ini
+        $daysToSubtract = match($type) {
+            'Aftercare h+1' => 1,
+            'Followup h+7' => 7,
+            'Followup h+1bulan' => 30,
+            default => 0,
+        };
+        
+        $referenceInvoiceDate = $referenceDate->copy()->subDays($daysToSubtract);
 
-        if ($type) {
-            $query->where('type', $type);
-        }
+        $query = Sale::query();
+        
+        // Filter berdasarkan invoice_date (tanggal penjualan)
+        $query->whereDate('invoice_date', $referenceInvoiceDate->toDateString());
 
+        // Filter berdasarkan status followup di sale table
         if ($status) {
-            $query->where('status', $status);
+            $statusColumn = match($type) {
+                'Aftercare h+1' => 'followup_h1_status',
+                'Followup h+7' => 'followup_h7_status',
+                'Followup h+1bulan' => 'followup_1month_status',
+                default => 'followup_h1_status',
+            };
+            
+            $query->where($statusColumn, $status);
         }
 
-        $records = $query->orderBy('scheduled_date')->paginate(20);
+        $records = $query->with('items')->orderBy('invoice_date', 'asc')->paginate(20);
 
         $types = ['Aftercare h+1', 'Followup h+7', 'Followup h+1bulan'];
         $statuses = ['pending', 'completed', 'skipped'];
 
-        return view('aftercare.index', compact('records', 'types', 'statuses', 'type', 'status'));
+        return view('aftercare.index', compact('records', 'types', 'statuses', 'type', 'status', 'referenceDate'));
     }
 
-    public function markComplete(CustomerAftercare $aftercare)
+    public function markComplete(Sale $sale)
     {
-        $aftercare->update([
-            'status' => 'completed',
-            'done_date' => now()->toDateString(),
-        ]);
+        $type = request('type', 'Aftercare h+1');
+        
+        $statusColumn = match($type) {
+            'Aftercare h+1' => 'followup_h1_status',
+            'Followup h+7' => 'followup_h7_status',
+            'Followup h+1bulan' => 'followup_1month_status',
+            default => 'followup_h1_status',
+        };
+        
+        $sale->update([$statusColumn => 'completed']);
 
-        return back()->with('success', 'Aftercare berhasil ditandai selesai!');
+        return back()->with('success', 'Follow-up berhasil ditandai selesai!');
     }
 
-    public function markSkipped(CustomerAftercare $aftercare)
+    public function markSkipped(Sale $sale)
     {
-        $aftercare->update([
-            'status' => 'skipped',
-        ]);
+        $type = request('type', 'Aftercare h+1');
+        
+        $statusColumn = match($type) {
+            'Aftercare h+1' => 'followup_h1_status',
+            'Followup h+7' => 'followup_h7_status',
+            'Followup h+1bulan' => 'followup_1month_status',
+            default => 'followup_h1_status',
+        };
+        
+        $sale->update([$statusColumn => 'skipped']);
 
-        return back()->with('success', 'Aftercare ditandai skip!');
-    }
-
-    public function edit(CustomerAftercare $aftercare)
-    {
-        return view('aftercare.edit', compact('aftercare'));
-    }
-
-    public function update(Request $request, CustomerAftercare $aftercare)
-    {
-        $request->validate([
-            'notes' => 'nullable|string',
-            'status' => 'required|in:pending,completed,skipped',
-        ]);
-
-        $data = $request->only('notes', 'status');
-        if ($request->status === 'completed') {
-            $data['done_date'] = now()->toDateString();
-        }
-
-        $aftercare->update($data);
-
-        return redirect()
-            ->route('aftercare.index')
-            ->with('success', 'Aftercare berhasil diupdate!');
+        return back()->with('success', 'Follow-up ditandai skip!');
     }
 }

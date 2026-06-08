@@ -101,7 +101,7 @@
                         @foreach($followupToday as $sale)
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4">
-                                <a href="{{ route('sales.customer-detail', $sale->phone_number) }}" class="text-blue-600 hover:underline font-medium">
+                                <a href="{{ route('sales.show', $sale) }}" class="text-blue-600 hover:underline font-medium">
                                     {{ $sale->customer_name }}
                                 </a>
                                 <div class="text-sm text-gray-600">{{ $sale->phone_number }}</div>
@@ -118,7 +118,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-sm">
-                                <a href="{{ route('sales.customer-detail', $sale->phone_number) }}" class="text-blue-600 hover:underline">
+                                <a href="{{ route('sales.show', $sale) }}" class="text-blue-600 hover:underline">
                                     Detail
                                 </a>
                             </td>
@@ -152,7 +152,7 @@
                         @forelse($pendingFollowups as $sale)
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4">
-                                <a href="{{ route('sales.customer-detail', $sale->phone_number) }}" class="text-blue-600 hover:underline font-medium">
+                                <a href="{{ route('sales.show', $sale) }}" class="text-blue-600 hover:underline font-medium">
                                     {{ $sale->customer_name }}
                                 </a>
                                 <div class="text-sm text-gray-600">{{ $sale->phone_number }}</div>
@@ -187,7 +187,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-sm">
-                                <a href="{{ route('sales.customer-detail', $sale->phone_number) }}" class="text-blue-600 hover:underline">
+                                <a href="{{ route('sales.show', $sale) }}" class="text-blue-600 hover:underline">
                                     Detail
                                 </a>
                             </td>

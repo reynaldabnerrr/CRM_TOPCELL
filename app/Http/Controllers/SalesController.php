@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Imports\SalesImport;
 use App\Models\Sale;
-use App\Models\CustomerAftercare;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -113,7 +112,7 @@ class SalesController extends Controller
     /**
      * Update status followup
      */
-    public function updateFollowupStatus(Request $request, $id)
+    public function updateFollowupStatus(Request $request, $invoice_number)
     {
         $request->validate([
             'followup_type' => 'required|in:h1,h7,1month',
@@ -121,7 +120,7 @@ class SalesController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $sale = Sale::findOrFail($id);
+        $sale = Sale::where('invoice_number', $invoice_number)->firstOrFail();
         $followupType = $request->followup_type;
         $status = $request->status;
         $notes = $request->notes ?? null;
@@ -146,7 +145,7 @@ class SalesController extends Controller
 
     public function index(Request $request)
     {
-        $query = Sale::query();
+        $query = Sale::with('items'); // Eager load items
 
         // Filter by search
         if ($request->search) {
@@ -205,10 +204,6 @@ class SalesController extends Controller
 
     public function show(Sale $sale)
     {
-        $aftercareRecords = $sale->aftercareRecords()
-            ->orderBy('scheduled_date')
-            ->get();
-        
-        return view('sales.show', compact('sale', 'aftercareRecords'));
+        return view('sales.show', compact('sale'));
     }
 }

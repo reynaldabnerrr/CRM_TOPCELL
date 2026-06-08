@@ -59,36 +59,42 @@
                 </div>
             </div>
 
-            <!-- Aftercare Records -->
+            <!-- Items -->
             <div class="bg-white overflow-hidden shadow-sm rounded-lg">
                 <div class="p-6">
-                    <h3 class="text-lg font-semibold mb-4">Riwayat Aftercare & Followup</h3>
+                    <h3 class="text-lg font-semibold mb-4">Item Barang/Jasa</h3>
                     
-                    @if ($aftercareRecords->count() > 0)
-                        <div class="space-y-4">
-                            @foreach ($aftercareRecords as $record)
-                                <div class="border rounded-lg p-4 {{ $record->status === 'completed' ? 'bg-green-50 border-green-200' : ($record->status === 'skipped' ? 'bg-gray-50 border-gray-200' : 'bg-yellow-50 border-yellow-200') }}">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <div>
-                                            <p class="font-semibold">{{ $record->type }}</p>
-                                            <p class="text-sm text-gray-600">Terjadwal: {{ $record->scheduled_date->format('d M Y') }}</p>
-                                        </div>
-                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
-                                            {{ $record->status === 'completed' ? 'bg-green-100 text-green-800' : ($record->status === 'skipped' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                            {{ ucfirst($record->status) }}
-                                        </span>
-                                    </div>
-                                    @if ($record->done_date)
-                                        <p class="text-sm text-gray-600">Selesai: {{ $record->done_date->format('d M Y') }}</p>
-                                    @endif
-                                    @if ($record->notes)
-                                        <p class="text-sm mt-2 text-gray-700">{{ $record->notes }}</p>
-                                    @endif
-                                </div>
-                            @endforeach
+                    @if ($sale->items->count() > 0)
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Barang</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Beli</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach ($sale->items as $item)
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item->item_code }}</td>
+                                            <td class="px-6 py-4 text-sm text-gray-900">{{ $item->item_name }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item->vendor ?? '-' }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($item->purchase_price, 0, ',', '.') }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($item->selling_price, 0, ',', '.') }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item->quantity }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($item->total_revenue, 0, ',', '.') }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
                     @else
-                        <p class="text-gray-500">Belum ada aftercare records</p>
+                        <p class="text-gray-500">Tidak ada item</p>
                     @endif
                 </div>
             </div>

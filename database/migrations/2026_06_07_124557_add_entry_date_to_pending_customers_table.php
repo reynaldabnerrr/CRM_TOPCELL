@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // All followup tracking fields already added in create_sales_table migration
-        // This migration is a placeholder for future modifications
+        Schema::table('pending_customers', function (Blueprint $table) {
+            $table->date('entry_date')->nullable()->after('phone_number');
+        });
     }
 
     /**
@@ -20,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Placeholder migration - no changes to reverse
+        Schema::table('pending_customers', function (Blueprint $table) {
+            $table->dropColumn('entry_date');
+        });
     }
 };

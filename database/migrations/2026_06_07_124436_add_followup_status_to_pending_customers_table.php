@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // All followup tracking fields already added in create_sales_table migration
-        // This migration is a placeholder for future modifications
+        Schema::table('pending_customers', function (Blueprint $table) {
+            $table->string('followup_status')->default('pending')->after('next_followup_date'); // pending, completed, skipped
+        });
     }
 
     /**
@@ -20,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Placeholder migration - no changes to reverse
+        Schema::table('pending_customers', function (Blueprint $table) {
+            $table->dropColumn('followup_status');
+        });
     }
 };

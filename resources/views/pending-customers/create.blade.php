@@ -56,22 +56,63 @@
                         </div>
 
                         <div class="mb-6">
-                            <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="status_id" class="block text-sm font-medium text-gray-700 mb-2">
                                 Status <span class="text-red-500">*</span>
                             </label>
-                            <select 
-                                id="status" 
-                                name="status"
+                            <div class="flex gap-2">
+                                <select 
+                                    id="status_id" 
+                                    name="status_id"
+                                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    {{ old('create_new_status') ? 'disabled' : '' }}
+                                >
+                                    <option value="">-- Pilih Status --</option>
+                                    @foreach ($statuses as $s)
+                                        <option value="{{ $s->id }}" {{ old('status_id') == $s->id ? 'selected' : '' }}>
+                                            {{ $s->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <label class="flex items-center px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input 
+                                        type="checkbox" 
+                                        id="create_new_status" 
+                                        name="create_new_status"
+                                        class="rounded"
+                                        onchange="toggleStatusInput()"
+                                        {{ old('create_new_status') ? 'checked' : '' }}
+                                    >
+                                    <span class="ml-2 text-sm font-medium text-gray-700">Baru</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-6" id="new_status_field" style="display: {{ old('create_new_status') ? 'block' : 'none' }};">
+                            <label for="new_status_name" class="block text-sm font-medium text-gray-700 mb-2">
+                                Nama Status Baru <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="new_status_name" 
+                                name="new_status_name" 
+                                value="{{ old('new_status_name') }}"
+                                placeholder="Misal: Menunggu Konfirmasi"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="entry_date" class="block text-sm font-medium text-gray-700 mb-2">
+                                Tanggal Masuk <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="date" 
+                                id="entry_date" 
+                                name="entry_date" 
+                                value="{{ old('entry_date', now()->format('Y-m-d')) }}"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 required
                             >
-                                <option value="">-- Pilih Status --</option>
-                                @foreach ($statuses as $s)
-                                    <option value="{{ $s }}" {{ old('status') === $s ? 'selected' : '' }}>
-                                        {{ $s }}
-                                    </option>
-                                @endforeach
-                            </select>
                         </div>
 
                         <div class="mb-6">
@@ -102,4 +143,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+    function toggleStatusInput() {
+        const checkbox = document.getElementById('create_new_status');
+        const statusSelect = document.getElementById('status_id');
+        const newStatusField = document.getElementById('new_status_field');
+        const newStatusInput = document.getElementById('new_status_name');
+        
+        if (checkbox.checked) {
+            statusSelect.disabled = true;
+            statusSelect.value = '';
+            newStatusField.style.display = 'block';
+            newStatusInput.required = true;
+        } else {
+            statusSelect.disabled = false;
+            newStatusField.style.display = 'none';
+            newStatusInput.required = false;
+            newStatusInput.value = '';
+        }
+    }
+    </script>
 </x-app-layout>
