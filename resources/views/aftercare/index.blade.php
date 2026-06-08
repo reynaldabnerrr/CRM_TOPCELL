@@ -38,13 +38,13 @@
 
             <!-- Filter By Type -->
             <div class="mb-6">
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">Jenis Follow-up:</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Jenis Aftercare:</h3>
                 <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('aftercare.index', ['date' => $referenceDate->toDateString()]) }}" class="px-4 py-2 rounded {{ !request('type') || request('type') === '' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
+                    <a href="{{ route('aftercare.index', ['type' => 'all', 'status' => $status, 'date' => $referenceDate->toDateString()]) }}" class="px-4 py-2 rounded {{ $type === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
                         Semua Tipe
                     </a>
                     @foreach ($types as $t)
-                        <a href="{{ route('aftercare.index', ['type' => $t, 'date' => $referenceDate->toDateString()]) }}" class="px-4 py-2 rounded {{ $type === $t ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
+                        <a href="{{ route('aftercare.index', ['type' => $t, 'status' => $status, 'date' => $referenceDate->toDateString()]) }}" class="px-4 py-2 rounded {{ $type === $t ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
                             {{ $t }}
                         </a>
                     @endforeach
@@ -55,15 +55,36 @@
             <div class="mb-6">
                 <h3 class="text-sm font-semibold text-gray-700 mb-2">Status:</h3>
                 <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('aftercare.index', ['type' => $type, 'date' => $referenceDate->toDateString()]) }}" class="px-4 py-2 rounded {{ !request('status') || request('status') === '' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                        Semua Status
-                    </a>
                     @foreach ($statuses as $s)
                         <a href="{{ route('aftercare.index', ['type' => $type, 'status' => $s, 'date' => $referenceDate->toDateString()]) }}" class="px-4 py-2 rounded {{ $status === $s ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
                             {{ ucfirst($s) }}
                         </a>
                     @endforeach
                 </div>
+            </div>
+
+            <!-- Search -->
+            <div class="mb-6">
+                <form method="GET" action="{{ route('aftercare.index') }}" class="flex flex-wrap gap-2 items-end">
+                    <input type="hidden" name="type" value="{{ $type }}">
+                    <input type="hidden" name="status" value="{{ $status }}">
+                    <input type="hidden" name="date" value="{{ $referenceDate->toDateString() }}">
+                    <div>
+                        <label class="text-sm font-semibold text-gray-700 mb-1 block">Cari berdasarkan:</label>
+                        <select name="search_by" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="customer_name" {{ $searchBy === 'customer_name' ? 'selected' : '' }}>Nama Customer</option>
+                            <option value="invoice_number" {{ $searchBy === 'invoice_number' ? 'selected' : '' }}>No. Faktur</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="text-sm font-semibold text-gray-700 mb-1 block">Kata kunci:</label>
+                        <input type="text" name="search" value="{{ $search }}" placeholder="Ketik untuk mencari..." class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Cari</button>
+                    @if($search)
+                    <a href="{{ route('aftercare.index', ['type' => $type, 'status' => $status, 'date' => $referenceDate->toDateString()]) }}" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 text-sm font-medium">Reset</a>
+                    @endif
+                </form>
             </div>
 
             <div class="bg-white overflow-hidden shadow-sm rounded-lg">
@@ -108,35 +129,82 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
                                         @php
-                                            $statusColumn = match($type) {
-                                                'Aftercare h+1' => 'followup_h1_status',
-                                                'Followup h+7' => 'followup_h7_status',
-                                                'Followup h+1bulan' => 'followup_1month_status',
-                                                default => 'followup_h1_status',
+                                            // Tentukan tipe followup untuk baris ini
+                                            if ($type === 'all') {
+                                                $diff = (int) $sale->invoice_date->diffInDays($referenceDate, false) * -1;
+                                                // diffInDays positif = invoice_date sebelum referenceDate
+                                                $daysDiff = $referenceDate->diffInDays($sale->invoice_date);
+                                                $rowType = match(true) {
+                                                    $daysDiff == 1  => 'Aftercare h+1',
+                                                    $daysDiff == 7  => 'Aftercare h+7',
+                                                    $daysDiff == 30 => 'Aftercare h+1bulan',
+                                                    default         => 'Aftercare h+1',
+                                                };
+                                            } else {
+                                                $rowType = $type;
+                                            }
+                                            $statusColumn = match($rowType) {
+                                                'Aftercare h+1'     => 'followup_h1_status',
+                                                    'Aftercare h+7'     => 'followup_h7_status',
+                                                    'Aftercare h+1bulan'=> 'followup_1month_status',
+                                                default             => 'followup_h1_status',
                                             };
                                             $saleStatus = $sale->$statusColumn;
                                         @endphp
+                                        @if ($type === 'all')
+                                            <span class="px-2 py-0.5 text-xs rounded-full bg-indigo-50 text-indigo-700 font-medium block mb-1">{{ $rowType }}</span>
+                                        @endif
                                         <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
                                             {{ $saleStatus === 'completed' ? 'bg-green-100 text-green-800' : ($saleStatus === 'skipped' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800') }}">
                                             {{ ucfirst($saleStatus) }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm space-x-2">
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
                                         @if ($saleStatus === 'pending')
-                                            <form action="{{ route('aftercare.complete', $sale) }}" method="POST" class="inline" onsubmit="return confirm('Tandai sebagai selesai?')">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <form action="{{ route('aftercare.complete', $sale) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="type" value="{{ $rowType }}">
+                                                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-semibold transition">
+                                                        ✓ Selesai
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('aftercare.skip', $sale) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="type" value="{{ $rowType }}">
+                                                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg text-xs font-semibold transition">
+                                                        Skip
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @elseif ($saleStatus === 'skipped')
+                                            <div class="flex items-center justify-center gap-2">
+                                                <form action="{{ route('aftercare.complete', $sale) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="type" value="{{ $rowType }}">
+                                                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-xs font-semibold transition">
+                                                        ✓ Selesai
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('aftercare.pending', $sale) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="type" value="{{ $rowType }}">
+                                                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded-lg text-xs font-semibold transition">
+                                                        ↩ Pending
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @elseif ($saleStatus === 'completed')
+                                            <form action="{{ route('aftercare.pending', $sale) }}" method="POST" class="inline">
                                                 @csrf
                                                 @method('PATCH')
-                                                <input type="hidden" name="type" value="{{ $type }}">
-                                                <button type="submit" class="text-green-600 hover:text-green-900 font-semibold">
-                                                    ✓ Selesai
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('aftercare.skip', $sale) }}" method="POST" class="inline" onsubmit="return confirm('Skip follow-up ini?')">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="type" value="{{ $type }}">
-                                                <button type="submit" class="text-gray-600 hover:text-gray-900">
-                                                    Skip
+                                                <input type="hidden" name="type" value="{{ $rowType }}">
+                                                <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded-lg text-xs font-semibold transition">
+                                                    ↩ Pending
                                                 </button>
                                             </form>
                                         @endif

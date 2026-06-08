@@ -47,7 +47,7 @@ class SalesController extends Controller
                   ->orWhere('followup_1month_status', 'pending');
             });
         }
-        $pendingFollowups = $pendingQuery->orderBy('invoice_date', 'asc')->paginate(10)->withQueryString();
+        $pendingFollowups = $pendingQuery->orderBy('invoice_date', 'asc')->paginate(20)->appends($request->query());
 
         // Statistik
         $stats = [

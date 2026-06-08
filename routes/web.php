@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [CustomerAfterCareController::class, 'index'])->name('index');
         Route::patch('/{sale}/complete', [CustomerAfterCareController::class, 'markComplete'])->name('complete');
         Route::patch('/{sale}/skip', [CustomerAfterCareController::class, 'markSkipped'])->name('skip');
+        Route::patch('/{sale}/pending', [CustomerAfterCareController::class, 'markPending'])->name('pending');
     });
 });
 

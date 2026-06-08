@@ -10,74 +10,109 @@ class CustomerAfterCareController extends Controller
 {
     public function index()
     {
-        $type = request('type', 'Aftercare h+1');
+        $type   = request('type', 'all'); // all | Aftercare h+1 | Aftercare h+7 | Aftercare h+1bulan
         $status = request('status', 'pending');
+        $search = request('search');
+        $searchBy = request('search_by', 'customer_name'); // customer_name | invoice_number
         $referenceDate = request('date') ? Carbon::parse(request('date')) : Carbon::now();
 
-        // Hitung invoice_date yang seharusnya punya aftercare pada reference_date ini
-        $daysToSubtract = match($type) {
-            'Aftercare h+1' => 1,
-            'Followup h+7' => 7,
-            'Followup h+1bulan' => 30,
-            default => 0,
-        };
-        
-        $referenceInvoiceDate = $referenceDate->copy()->subDays($daysToSubtract);
-
         $query = Sale::query();
-        
-        // Filter berdasarkan invoice_date (tanggal penjualan)
-        $query->whereDate('invoice_date', $referenceInvoiceDate->toDateString());
 
-        // Filter berdasarkan status followup di sale table
-        if ($status) {
-            $statusColumn = match($type) {
-                'Aftercare h+1' => 'followup_h1_status',
-                'Followup h+7' => 'followup_h7_status',
-                'Followup h+1bulan' => 'followup_1month_status',
-                default => 'followup_h1_status',
+        if ($type === 'all') {
+            $d1  = $referenceDate->copy()->subDays(1)->toDateString();
+            $d7  = $referenceDate->copy()->subDays(7)->toDateString();
+            $d30 = $referenceDate->copy()->subDays(30)->toDateString();
+
+            $query->where(function ($q) use ($d1, $d7, $d30, $status) {
+                $q->where(function ($q2) use ($d1, $status) {
+                    $q2->whereDate('invoice_date', $d1)
+                       ->where('followup_h1_status', $status);
+                })->orWhere(function ($q2) use ($d7, $status) {
+                    $q2->whereDate('invoice_date', $d7)
+                       ->where('followup_h7_status', $status);
+                })->orWhere(function ($q2) use ($d30, $status) {
+                    $q2->whereDate('invoice_date', $d30)
+                       ->where('followup_1month_status', $status);
+                });
+            });
+        } else {
+            $daysToSubtract = match($type) {
+                'Aftercare h+1'     => 1,
+                'Aftercare h+7'     => 7,
+                'Aftercare h+1bulan'=> 30,
+                default             => 1,
             };
-            
-            $query->where($statusColumn, $status);
+            $statusColumn = match($type) {
+                'Aftercare h+1'     => 'followup_h1_status',
+                'Aftercare h+7'     => 'followup_h7_status',
+                'Aftercare h+1bulan'=> 'followup_1month_status',
+                default             => 'followup_h1_status',
+            };
+
+            $invoiceDate = $referenceDate->copy()->subDays($daysToSubtract)->toDateString();
+            $query->whereDate('invoice_date', $invoiceDate)
+                  ->where($statusColumn, $status);
         }
 
-        $records = $query->with('items')->orderBy('invoice_date', 'asc')->paginate(20);
+        // Search filter
+        if ($search) {
+            $column = in_array($searchBy, ['customer_name', 'invoice_number']) ? $searchBy : 'customer_name';
+            $query->where($column, 'like', '%' . $search . '%');
+        }
 
-        $types = ['Aftercare h+1', 'Followup h+7', 'Followup h+1bulan'];
+        $records = $query->with('items')->orderBy('invoice_date', 'asc')->paginate(20)->appends(request()->query());
+
+        $types    = ['Aftercare h+1', 'Aftercare h+7', 'Aftercare h+1bulan'];
         $statuses = ['pending', 'completed', 'skipped'];
 
-        return view('aftercare.index', compact('records', 'types', 'statuses', 'type', 'status', 'referenceDate'));
+        return view('aftercare.index', compact('records', 'types', 'statuses', 'type', 'status', 'referenceDate', 'search', 'searchBy'));
     }
 
     public function markComplete(Sale $sale)
     {
         $type = request('type', 'Aftercare h+1');
-        
+
         $statusColumn = match($type) {
-            'Aftercare h+1' => 'followup_h1_status',
-            'Followup h+7' => 'followup_h7_status',
-            'Followup h+1bulan' => 'followup_1month_status',
-            default => 'followup_h1_status',
+            'Aftercare h+1'     => 'followup_h1_status',
+            'Aftercare h+7'     => 'followup_h7_status',
+            'Aftercare h+1bulan'=> 'followup_1month_status',
+            default             => 'followup_h1_status',
         };
-        
+
         $sale->update([$statusColumn => 'completed']);
 
-        return back()->with('success', 'Follow-up berhasil ditandai selesai!');
+        return back()->with('success', 'Aftercare berhasil ditandai selesai!');
     }
 
     public function markSkipped(Sale $sale)
     {
         $type = request('type', 'Aftercare h+1');
-        
+
         $statusColumn = match($type) {
-            'Aftercare h+1' => 'followup_h1_status',
-            'Followup h+7' => 'followup_h7_status',
-            'Followup h+1bulan' => 'followup_1month_status',
-            default => 'followup_h1_status',
+            'Aftercare h+1'     => 'followup_h1_status',
+            'Aftercare h+7'     => 'followup_h7_status',
+            'Aftercare h+1bulan'=> 'followup_1month_status',
+            default             => 'followup_h1_status',
         };
-        
+
         $sale->update([$statusColumn => 'skipped']);
 
-        return back()->with('success', 'Follow-up ditandai skip!');
+        return back()->with('success', 'Aftercare ditandai skip!');
+    }
+
+    public function markPending(Sale $sale)
+    {
+        $type = request('type', 'Aftercare h+1');
+
+        $statusColumn = match($type) {
+            'Aftercare h+1'     => 'followup_h1_status',
+            'Aftercare h+7'     => 'followup_h7_status',
+            'Aftercare h+1bulan'=> 'followup_1month_status',
+            default             => 'followup_h1_status',
+        };
+
+        $sale->update([$statusColumn => 'pending']);
+
+        return back()->with('success', 'Aftercare dikembalikan ke Pending.');
     }
 }

@@ -157,19 +157,19 @@
                 </div>
                 {{-- Filter Tabs --}}
                 <div class="flex items-center gap-1 flex-wrap">
-                    <a href="{{ request()->fullUrlWithQuery(['filter' => 'all']) }}"
+                    <a href="{{ route('sales.dashboard', ['filter' => 'all']) }}"
                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
                         Semua
                     </a>
-                    <a href="{{ request()->fullUrlWithQuery(['filter' => 'h1']) }}"
+                    <a href="{{ route('sales.dashboard', ['filter' => 'h1']) }}"
                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $filter === 'h1' ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' }}">
                         H+1 <span class="ml-1 opacity-80">({{ $stats['pending_h1'] }})</span>
                     </a>
-                    <a href="{{ request()->fullUrlWithQuery(['filter' => 'h7']) }}"
+                    <a href="{{ route('sales.dashboard', ['filter' => 'h7']) }}"
                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $filter === 'h7' ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-700 hover:bg-orange-100' }}">
                         H+7 <span class="ml-1 opacity-80">({{ $stats['pending_h7'] }})</span>
                     </a>
-                    <a href="{{ request()->fullUrlWithQuery(['filter' => '1month']) }}"
+                    <a href="{{ route('sales.dashboard', ['filter' => '1month']) }}"
                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {{ $filter === '1month' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100' }}">
                         H+1bln <span class="ml-1 opacity-80">({{ $stats['pending_1month'] }})</span>
                     </a>
