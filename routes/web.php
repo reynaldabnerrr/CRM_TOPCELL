@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\PendingCustomerController;
 use App\Http\Controllers\CustomerAfterCareController;
+use App\Http\Controllers\AccountManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -65,8 +66,8 @@ Route::middleware('auth')->group(function () {
         Route::get('{sale:invoice_number}', [SalesController::class, 'show'])->name('show')->where('sale', '.*');
     });
 
-    // Pending Customers Routes
-    Route::prefix('pending-customers')->name('pending-customers.')->group(function () {
+    // Pending Customers Routes (Follow-up) - requires followup access
+    Route::middleware('followup.access')->prefix('pending-customers')->name('pending-customers.')->group(function () {
         Route::get('/', [PendingCustomerController::class, 'index'])->name('index');
         Route::get('/create', [PendingCustomerController::class, 'create'])->name('create');
         Route::post('/', [PendingCustomerController::class, 'store'])->name('store');
@@ -74,14 +75,24 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{pendingCustomer}', [PendingCustomerController::class, 'update'])->name('update');
         Route::delete('/{pendingCustomer}', [PendingCustomerController::class, 'destroy'])->name('destroy');
         Route::post('/{pendingCustomer}/update-followup-checkpoint', [PendingCustomerController::class, 'updateFollowupCheckpoint'])->name('update-followup-checkpoint');
+        Route::delete('/statuses/{status}', [PendingCustomerController::class, 'destroyStatus'])->name('statuses.destroy');
     });
 
-    // Aftercare Routes
-    Route::prefix('aftercare')->name('aftercare.')->group(function () {
+    // Aftercare Routes - requires aftercare access
+    Route::middleware('aftercare.access')->prefix('aftercare')->name('aftercare.')->group(function () {
         Route::get('/', [CustomerAfterCareController::class, 'index'])->name('index');
         Route::patch('/{sale}/complete', [CustomerAfterCareController::class, 'markComplete'])->name('complete');
         Route::patch('/{sale}/skip', [CustomerAfterCareController::class, 'markSkipped'])->name('skip');
         Route::patch('/{sale}/pending', [CustomerAfterCareController::class, 'markPending'])->name('pending');
+    });
+
+    // Account Management Routes (superadmin only)
+    Route::middleware('superadmin')->prefix('account-management')->name('account-management.')->group(function () {
+        Route::get('/', [AccountManagementController::class, 'index'])->name('index');
+        Route::post('/', [AccountManagementController::class, 'store'])->name('store');
+        Route::delete('/{user}', [AccountManagementController::class, 'destroy'])->name('destroy');
+        Route::patch('/{user}/toggle-followup', [AccountManagementController::class, 'toggleFollowup'])->name('toggle-followup');
+        Route::patch('/{user}/toggle-aftercare', [AccountManagementController::class, 'toggleAftercare'])->name('toggle-aftercare');
     });
 });
 

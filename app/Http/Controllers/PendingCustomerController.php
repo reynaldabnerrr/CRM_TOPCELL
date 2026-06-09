@@ -88,7 +88,7 @@ class PendingCustomerController extends Controller
             'followup_h1_status' => 'pending',
             'followup_h7_date' => $entryDate->clone()->addDays(7),
             'followup_h7_status' => 'pending',
-            'followup_h1month_date' => $entryDate->clone()->addDays(30),
+            'followup_h1month_date' => $entryDate->clone()->addMonth(1),
             'followup_h1month_status' => 'pending',
         ]);
 
@@ -143,7 +143,7 @@ class PendingCustomerController extends Controller
             'notes' => $request->notes,
             'followup_h1_date' => $entryDate->clone()->addDay(),
             'followup_h7_date' => $entryDate->clone()->addDays(7),
-            'followup_h1month_date' => $entryDate->clone()->addDays(30),
+            'followup_h1month_date' => $entryDate->clone()->addMonth(1),
         ]);
 
         return redirect()
@@ -174,5 +174,15 @@ class PendingCustomerController extends Controller
         return redirect()
             ->back()
             ->with('success', "Follow-up {$type} berhasil dicatat!");
+    }
+
+    public function destroyStatus(\App\Models\PendingCustomerStatus $status)
+    {
+        // Nullify status_id on related customers (handled by nullOnDelete FK constraint)
+        $status->delete();
+
+        return redirect()
+            ->back()
+            ->with('success', 'Status berhasil dihapus. Data calon customer tetap ada.');
     }
 }

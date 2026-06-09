@@ -12,6 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->alias([
+            'superadmin' => \App\Http\Middleware\SuperAdmin::class,
+            'followup.access' => \App\Http\Middleware\CheckFollowupAccess::class,
+            'aftercare.access' => \App\Http\Middleware\CheckAftercareAccess::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -14,10 +14,15 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('admin'),
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'admin',
+                'password' => Hash::make('admin'),
+                'role' => 'superadmin',
+                'can_access_followup' => true,
+                'can_access_aftercare' => true,
+            ]
+        );
     }
 }

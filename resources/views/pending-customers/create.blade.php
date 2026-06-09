@@ -84,6 +84,10 @@
                                     >
                                     <span class="ml-2 text-sm font-medium text-gray-700">Baru</span>
                                 </label>
+                                <button type="button" onclick="document.getElementById('manageStatusModal').classList.remove('hidden')"
+                                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                                    Kelola
+                                </button>
                             </div>
                         </div>
 
@@ -164,4 +168,35 @@
         }
     }
     </script>
+
+    <!-- Modal Kelola Status -->
+    <div id="manageStatusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Kelola Status</h3>
+                <button type="button" onclick="document.getElementById('manageStatusModal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            @if ($statuses->isEmpty())
+                <p class="text-sm text-gray-500">Belum ada status.</p>
+            @else
+                <ul class="divide-y divide-gray-100">
+                    @foreach ($statuses as $s)
+                        <li class="flex items-center justify-between py-2">
+                            <span class="text-sm text-gray-700">{{ $s->name }}</span>
+                            <form action="{{ route('pending-customers.statuses.destroy', $s) }}" method="POST"
+                                onsubmit="return confirm('Hapus status \'{{ addslashes($s->name) }}\'? Data calon customer dengan status ini akan tetap ada tapi statusnya jadi kosong.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                    class="text-xs px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200">
+                                    Hapus
+                                </button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+    </div>
 </x-app-layout>

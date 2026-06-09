@@ -150,7 +150,7 @@ class SalesImport implements ToArray, WithCalculatedFormulas
 
         $followupH1Date = $invoiceDate->copy()->addDay(1);
         $followupH7Date = $invoiceDate->copy()->addDays(7);
-        $followup1MonthDate = $invoiceDate->copy()->addDays(30);
+        $followup1MonthDate = $invoiceDate->copy()->addMonth(1);
 
         // updateOrCreate: update jika invoice sudah ada, create jika belum
         Sale::updateOrCreate(
