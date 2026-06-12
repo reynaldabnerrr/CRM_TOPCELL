@@ -36,10 +36,20 @@
                                 placeholder="Ketik untuk mencari..."
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
                         </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Dari Tanggal:</label>
+                            <input type="date" name="date_from" value="{{ request('date_from') }}"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Sampai Tanggal:</label>
+                            <input type="date" name="date_to" value="{{ request('date_to') }}"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
                         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
                             Cari
                         </button>
-                        @if(!empty($search))
+                        @if(!empty($search) || request('date_from') || request('date_to'))
                         <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 text-sm font-medium">
                             Reset
                         </a>

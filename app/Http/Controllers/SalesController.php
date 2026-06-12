@@ -194,10 +194,19 @@ class SalesController extends Controller
             }
         }
 
+        // Filter by date range
+        if ($request->date_from) {
+            $query->whereDate('invoice_date', '>=', $request->date_from);
+        }
+        if ($request->date_to) {
+            $query->whereDate('invoice_date', '<=', $request->date_to);
+        }
+
         $sales = $query->orderBy('invoice_date', 'desc')->paginate(20)->appends($request->query());
 
         return view('sales.index', [
-            'sales'    => $sales,
+            'sales'     => $sales,
+            'sort'      => 'desc',
             'search'   => $search,
             'searchBy' => $searchBy,
         ]);

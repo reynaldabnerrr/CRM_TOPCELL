@@ -27,13 +27,22 @@ class PendingCustomerController extends Controller
             $query->where('status_id', $request->status_id);
         }
 
+        // Filter by date range
+        if ($request->date_from) {
+            $query->whereDate('entry_date', '>=', $request->date_from);
+        }
+        if ($request->date_to) {
+            $query->whereDate('entry_date', '<=', $request->date_to);
+        }
+
+        $sort      = 'desc';
         $customers = $query->orderBy('entry_date', 'desc')
             ->paginate(20)
             ->appends($request->query());
 
         $statuses = \App\Models\PendingCustomerStatus::all();
 
-        return view('pending-customers.index', compact('customers', 'statuses', 'search', 'searchBy'));
+        return view('pending-customers.index', compact('customers', 'statuses', 'search', 'searchBy', 'sort'));
     }
 
     public function followup(Request $request)
