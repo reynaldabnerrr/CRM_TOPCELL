@@ -131,29 +131,25 @@
                                         @php
                                             // Tentukan tipe followup untuk baris ini
                                             if ($type === 'all') {
-                                                $diff = (int) $sale->invoice_date->diffInDays($referenceDate, false) * -1;
-                                                // diffInDays positif = invoice_date sebelum referenceDate
-                                                $daysDiff = $referenceDate->diffInDays($sale->invoice_date);
+                                                $invoiceDateStr = $sale->invoice_date->toDateString();
                                                 $rowType = match(true) {
-                                                    $daysDiff == 1  => 'Aftercare h+1',
-                                                    $daysDiff == 7  => 'Aftercare h+7',
-                                                    $daysDiff == 30 => 'Aftercare h+1bulan',
-                                                    default         => 'Aftercare h+1',
+                                                    $invoiceDateStr === $referenceDate->copy()->subDays(1)->toDateString()  => 'Aftercare h+1',
+                                                    $invoiceDateStr === $referenceDate->copy()->subDays(7)->toDateString()  => 'Aftercare h+7',
+                                                    $invoiceDateStr === $referenceDate->copy()->subDays(30)->toDateString() => 'Aftercare h+1bulan',
+                                                    default => 'Aftercare h+1',
                                                 };
                                             } else {
                                                 $rowType = $type;
                                             }
                                             $statusColumn = match($rowType) {
-                                                'Aftercare h+1'     => 'followup_h1_status',
-                                                    'Aftercare h+7'     => 'followup_h7_status',
-                                                    'Aftercare h+1bulan'=> 'followup_1month_status',
-                                                default             => 'followup_h1_status',
+                                                'Aftercare h+1'      => 'followup_h1_status',
+                                                'Aftercare h+7'      => 'followup_h7_status',
+                                                'Aftercare h+1bulan' => 'followup_1month_status',
+                                                default              => 'followup_h1_status',
                                             };
                                             $saleStatus = $sale->$statusColumn;
                                         @endphp
-                                        @if ($type === 'all')
-                                            <span class="px-2 py-0.5 text-xs rounded-full bg-indigo-50 text-indigo-700 font-medium block mb-1">{{ $rowType }}</span>
-                                        @endif
+                                        <span class="px-2 py-0.5 text-xs rounded-full bg-indigo-50 text-indigo-700 font-medium block mb-1">{{ $rowType }}</span>
                                         <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
                                             {{ $saleStatus === 'completed' ? 'bg-green-100 text-green-800' : ($saleStatus === 'skipped' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800') }}">
                                             {{ ucfirst($saleStatus) }}
