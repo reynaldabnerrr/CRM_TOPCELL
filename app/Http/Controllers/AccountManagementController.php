@@ -28,8 +28,8 @@ class AccountManagementController extends Controller
             'email'                => $request->email,
             'password'             => Hash::make($request->password),
             'role'                 => 'user',
-            'can_access_followup'  => $request->boolean('can_access_followup', true),
-            'can_access_aftercare' => $request->boolean('can_access_aftercare', true),
+            'can_access_followup'  => $request->boolean('can_access_followup'),
+            'can_access_aftercare' => $request->boolean('can_access_aftercare'),
         ]);
 
         return redirect()->route('account-management.index')

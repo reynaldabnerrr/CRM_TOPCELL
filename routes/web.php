@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     // Pending Customers Routes (Follow-up) - requires followup access
     Route::middleware('followup.access')->prefix('pending-customers')->name('pending-customers.')->group(function () {
         Route::get('/', [PendingCustomerController::class, 'index'])->name('index');
+        Route::get('/followup', [PendingCustomerController::class, 'followup'])->name('followup');
         Route::get('/create', [PendingCustomerController::class, 'create'])->name('create');
         Route::post('/', [PendingCustomerController::class, 'store'])->name('store');
         Route::get('/{pendingCustomer}/edit', [PendingCustomerController::class, 'edit'])->name('edit');

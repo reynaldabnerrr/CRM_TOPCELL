@@ -7,37 +7,69 @@ use Illuminate\Http\Request;
 
 class PendingCustomerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $query = PendingCustomer::query();
-        
-        // Get reference date (default today)
-        $referenceDate = request('date') ? \Carbon\Carbon::parse(request('date')) : now();
-        $referenceDateStr = $referenceDate->toDateString();
-        
-        // Filter by follow-up type
-        if (request('type')) {
-            match(request('type')) {
-                'h+1' => $query->whereDate('followup_h1_date', $referenceDateStr),
-                'h+7' => $query->whereDate('followup_h7_date', $referenceDateStr),
-                'h+1month' => $query->whereDate('followup_h1month_date', $referenceDateStr),
-                default => null
-            };
+        $query = PendingCustomer::with('status');
+
+        $search   = trim($request->search ?? '');
+        $searchBy = in_array($request->search_by, ['name', 'phone_number']) ? $request->search_by : 'name';
+
+        if ($search !== '') {
+            $tokens = array_filter(explode(' ', $search));
+            $query->where(function ($q) use ($tokens, $searchBy) {
+                foreach ($tokens as $token) {
+                    $q->where($searchBy, 'like', "%{$token}%");
+                }
+            });
         }
-        
-        // Filter by status_id if provided
-        if (request('status_id')) {
-            $query->where('status_id', request('status_id'));
+
+        if ($request->status_id) {
+            $query->where('status_id', $request->status_id);
         }
-        
-        $customers = $query->with('status')
-            ->orderBy('entry_date', 'asc')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+
+        $customers = $query->orderBy('entry_date', 'desc')
+            ->paginate(20)
+            ->appends($request->query());
 
         $statuses = \App\Models\PendingCustomerStatus::all();
 
-        return view('pending-customers.index', compact('customers', 'statuses'));
+        return view('pending-customers.index', compact('customers', 'statuses', 'search', 'searchBy'));
+    }
+
+    public function followup(Request $request)
+    {
+        $referenceDate    = $request->date ? \Carbon\Carbon::parse($request->date) : now();
+        $referenceDateStr = $referenceDate->toDateString();
+        $type             = $request->type; // null = semua yang jatuh tempo hari itu
+
+        $query = PendingCustomer::with('status');
+
+        if ($type) {
+            match($type) {
+                'h+1'     => $query->whereDate('followup_h1_date', $referenceDateStr),
+                'h+7'     => $query->whereDate('followup_h7_date', $referenceDateStr),
+                'h+1month'=> $query->whereDate('followup_h1month_date', $referenceDateStr),
+                default   => null,
+            };
+        } else {
+            $query->where(function ($q) use ($referenceDateStr) {
+                $q->whereDate('followup_h1_date', $referenceDateStr)
+                  ->orWhereDate('followup_h7_date', $referenceDateStr)
+                  ->orWhereDate('followup_h1month_date', $referenceDateStr);
+            });
+        }
+
+        if ($request->status_id) {
+            $query->where('status_id', $request->status_id);
+        }
+
+        $customers = $query->orderBy('entry_date', 'asc')
+            ->paginate(20)
+            ->appends($request->query());
+
+        $statuses = \App\Models\PendingCustomerStatus::all();
+
+        return view('pending-customers.followup', compact('customers', 'statuses', 'referenceDate', 'type'));
     }
 
     public function create()

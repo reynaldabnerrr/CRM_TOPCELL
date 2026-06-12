@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-wrap justify-between items-center gap-2">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Follow-up Calon Customer') }}
+                {{ __('Data Calon Customer') }}
             </h2>
             <a href="{{ route('pending-customers.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
                 + Tambah Calon Customer
@@ -18,66 +18,45 @@
                 </div>
             @endif
 
-            <!-- Filter By Follow-up Type -->
-            <div class="mb-6">
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">Follow-up Schedule:</h3>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('pending-customers.index', array_merge(request()->query(), ['type' => null])) }}" class="px-4 py-2 rounded {{ !request('type') ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                        Semua
-                    </a>
-                    <a href="{{ route('pending-customers.index', array_merge(request()->query(), ['type' => 'h+1'])) }}" class="px-4 py-2 rounded {{ request('type') == 'h+1' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                        H+1
-                    </a>
-                    <a href="{{ route('pending-customers.index', array_merge(request()->query(), ['type' => 'h+7'])) }}" class="px-4 py-2 rounded {{ request('type') == 'h+7' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                        H+7
-                    </a>
-                    <a href="{{ route('pending-customers.index', array_merge(request()->query(), ['type' => 'h+1month'])) }}" class="px-4 py-2 rounded {{ request('type') == 'h+1month' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                        H+1 Bulan
-                    </a>
-                </div>
-            </div>
-
-            <!-- Filter By Date -->
-            <div class="mb-6">
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">Reference Date:</h3>
-                <div class="flex flex-wrap gap-2 items-center">
-                    <input type="date" id="dateFilter" value="{{ request('date') ?? now()->toDateString() }}" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <button onclick="filterByDate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Filter
-                    </button>
-                    <a href="{{ route('pending-customers.index') }}" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500">
-                        Reset Filter
-                    </a>
-                </div>
-            </div>
-
-            <script>
-                function filterByDate() {
-                    const date = document.getElementById('dateFilter').value;
-                    const type = "{{ request('type') ?? '' }}";
-                    let url = "{{ route('pending-customers.index') }}?";
-                    if (date) url += "date=" + date;
-                    if (type) url += "&type=" + type;
-                    window.location.href = url;
-                }
-            </script>
-
-            <!-- Status Filter -->
-            <div class="mb-6">
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">Status:</h3>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('pending-customers.index', ['date' => request('date')]) }}" class="px-4 py-2 rounded {{ !request('status_id') ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                        Semua Status
-                    </a>
-                    @foreach ($statuses as $s)
-                        <a href="{{ route('pending-customers.index', ['status_id' => $s->id, 'date' => request('date')]) }}" class="px-4 py-2 rounded {{ request('status_id') == $s->id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300' }}">
-                            {{ $s->name }}
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-
             <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                <!-- Search Bar -->
+                <div class="px-6 py-4 border-b bg-gray-50">
+                    <form method="GET" action="{{ route('pending-customers.index') }}" class="flex flex-wrap gap-2 items-end">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Cari berdasarkan:</label>
+                            <select name="search_by" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <option value="name"         {{ ($searchBy ?? 'name') === 'name'         ? 'selected' : '' }}>Nama</option>
+                                <option value="phone_number" {{ ($searchBy ?? '') === 'phone_number' ? 'selected' : '' }}>No. HP</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[220px]">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Kata kunci:</label>
+                            <input type="text" name="search" value="{{ $search ?? '' }}"
+                                placeholder="Ketik untuk mencari..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Status:</label>
+                            <select name="status_id" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <option value="">Semua Status</option>
+                                @foreach ($statuses as $s)
+                                    <option value="{{ $s->id }}" {{ request('status_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Cari</button>
+                        @if(!empty($search) || request('status_id'))
+                        <a href="{{ route('pending-customers.index') }}" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 text-sm font-medium">Reset</a>
+                        @endif
+                    </form>
+                    @if(!empty($search))
+                    <p class="mt-2 text-xs text-gray-500">
+                        Hasil pencarian <span class="font-semibold text-gray-700">"{{ $search }}"</span>
+                        — {{ $customers->total() }} data ditemukan
+                    </p>
+                    @endif
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b">
@@ -87,7 +66,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tgl Masuk</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catatan</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Terakhir Follow-up</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jadwal Follow-up</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>
                             </tr>
                         </thead>
@@ -110,37 +89,45 @@
                                             {{ $customer->status->name ?? '-' }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-600">
+                                    <td class="px-6 py-4 text-sm text-gray-600 max-w-[180px]">
                                         {{ Str::limit($customer->notes, 50) }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        @php
-                                            $lastDateField = 'followup_' . str_replace('+', '', request('type', 'h+1')) . '_last_date';
-                                            $lastDate = $customer->{$lastDateField};
-                                        @endphp
-                                        @if ($lastDate)
-                                            <span class="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded">
-                                                {{ $lastDate->format('d M Y') }}
-                                            </span>
-                                        @else
-                                            <span class="text-gray-500 text-sm">Belum di-follow-up</span>
-                                        @endif
+                                    <td class="px-6 py-4 text-sm text-gray-600">
+                                        <div class="space-y-1 text-xs">
+                                            <div class="flex gap-1 items-center">
+                                                <span class="text-gray-400 w-14">H+1:</span>
+                                                @if($customer->followup_h1_last_date)
+                                                    <span class="text-green-600 font-medium">✓ {{ $customer->followup_h1_last_date->format('d M Y') }}</span>
+                                                @else
+                                                    <span class="text-yellow-600">{{ $customer->followup_h1_date ? $customer->followup_h1_date->format('d M Y') : '-' }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="flex gap-1 items-center">
+                                                <span class="text-gray-400 w-14">H+7:</span>
+                                                @if($customer->followup_h7_last_date)
+                                                    <span class="text-green-600 font-medium">✓ {{ $customer->followup_h7_last_date->format('d M Y') }}</span>
+                                                @else
+                                                    <span class="text-yellow-600">{{ $customer->followup_h7_date ? $customer->followup_h7_date->format('d M Y') : '-' }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="flex gap-1 items-center">
+                                                <span class="text-gray-400 w-14">H+1bln:</span>
+                                                @if($customer->followup_h1month_last_date)
+                                                    <span class="text-green-600 font-medium">✓ {{ $customer->followup_h1month_last_date->format('d M Y') }}</span>
+                                                @else
+                                                    <span class="text-yellow-600">{{ $customer->followup_h1month_date ? $customer->followup_h1month_date->format('d M Y') : '-' }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm space-x-2">
-                                        <form action="{{ route('pending-customers.update-followup-checkpoint', $customer) }}" method="POST" class="inline">
-                                            @csrf
-                                            <input type="hidden" name="type" value="{{ request('type', 'h+1') }}">
-                                            <button type="submit" class="text-blue-600 hover:text-blue-900 font-medium text-xs">
-                                                ✓ Catat Follow-up
-                                            </button>
-                                        </form>
                                         <a href="{{ route('pending-customers.edit', $customer) }}" class="text-yellow-600 hover:text-yellow-900 text-xs font-medium">
                                             Edit
                                         </a>
                                         <form action="{{ route('pending-customers.destroy', $customer) }}" method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900 text-xs font-medium" onclick="return confirm('Apakah Anda yakin?')">
+                                            <button type="submit" class="text-red-600 hover:text-red-900 text-xs font-medium" onclick="return confirm('Hapus data ini?')">
                                                 Hapus
                                             </button>
                                         </form>
@@ -149,7 +136,8 @@
                             @empty
                                 <tr>
                                     <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                                        Belum ada data calon customer
+                                        Belum ada data calon customer.
+                                        <a href="{{ route('pending-customers.create') }}" class="text-blue-600 hover:underline">Tambah sekarang</a>
                                     </td>
                                 </tr>
                             @endforelse

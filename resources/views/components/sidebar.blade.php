@@ -81,12 +81,21 @@
             <p class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Followup Management</p>
 
             <a href="{{ route('pending-customers.index') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('pending-customers.*') ? 'bg-indigo-600' : 'hover:bg-gray-800' }} transition">
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('pending-customers.index') || request()->routeIs('pending-customers.create') || request()->routeIs('pending-customers.edit') ? 'bg-indigo-600' : 'hover:bg-gray-800' }} transition">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm0 0h6v-2a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <span>Calon Customer</span>
+                <span>Data Calon Customer</span>
+            </a>
+
+            <a href="{{ route('pending-customers.followup') }}"
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('pending-customers.followup') ? 'bg-indigo-600' : 'hover:bg-gray-800' }} transition">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Follow-up Calon Customer</span>
             </a>
         </div>
         @endif

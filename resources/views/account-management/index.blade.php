@@ -50,17 +50,40 @@
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="flex items-center gap-6 pt-5">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="can_access_followup" value="1" checked
-                                    class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                                <span class="text-sm text-gray-700">Akses Follow-up</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="can_access_aftercare" value="1" checked
-                                    class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                                <span class="text-sm text-gray-700">Akses Aftercare</span>
-                            </label>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Hak Akses</label>
+                            <div class="flex flex-wrap gap-4">
+                                <!-- Toggle Follow-up -->
+                                <label class="flex items-center gap-3 cursor-pointer select-none" onclick="toggleFormSwitch('new_followup')">
+                                    <div class="relative flex-shrink-0">
+                                        <input type="checkbox" name="can_access_followup" value="1"
+                                            id="new_followup" class="sr-only">
+                                        <div id="track_followup"
+                                            class="w-11 h-6 bg-gray-200 rounded-full transition-colors duration-200"></div>
+                                        <div id="dot_followup"
+                                            class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"></div>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700 block">Akses Follow-up</span>
+                                        <span class="text-xs text-gray-400">Kelola data calon customer</span>
+                                    </div>
+                                </label>
+                                <!-- Toggle Aftercare -->
+                                <label class="flex items-center gap-3 cursor-pointer select-none" onclick="toggleFormSwitch('new_aftercare')">
+                                    <div class="relative flex-shrink-0">
+                                        <input type="checkbox" name="can_access_aftercare" value="1"
+                                            id="new_aftercare" class="sr-only">
+                                        <div id="track_aftercare"
+                                            class="w-11 h-6 bg-gray-200 rounded-full transition-colors duration-200"></div>
+                                        <div id="dot_aftercare"
+                                            class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"></div>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700 block">Akses Aftercare</span>
+                                        <span class="text-xs text-gray-400">Kelola follow-up pasca penjualan</span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div class="mt-4">
@@ -151,6 +174,20 @@
     </div>
 
     <script>
+        function toggleFormSwitch(id) {
+            const checkbox = document.getElementById(id);
+            const track    = document.getElementById('track_' + id.replace('new_', ''));
+            const dot      = document.getElementById('dot_'   + id.replace('new_', ''));
+            checkbox.checked = !checkbox.checked;
+            if (checkbox.checked) {
+                track.classList.replace('bg-gray-200', 'bg-indigo-600');
+                dot.style.transform = 'translateX(20px)';
+            } else {
+                track.classList.replace('bg-indigo-600', 'bg-gray-200');
+                dot.style.transform = 'translateX(0)';
+            }
+        }
+
         function toggleAccess(userId, type, btn) {
             const url = `/account-management/${userId}/toggle-${type}`;
             const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
