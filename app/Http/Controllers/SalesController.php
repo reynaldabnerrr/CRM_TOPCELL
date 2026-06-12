@@ -156,10 +156,24 @@ class SalesController extends Controller
         $query = Sale::with('items'); // Eager load items
 
         // Filter by search
-        if ($request->search) {
-            $query->where('customer_name', 'like', "%{$request->search}%")
-                ->orWhere('phone_number', 'like', "%{$request->search}%")
-                ->orWhere('invoice_number', 'like', "%{$request->search}%");
+        $search   = trim($request->search ?? '');
+        $searchBy = in_array($request->search_by, ['customer_name', 'phone_number', 'invoice_number'])
+                    ? $request->search_by
+                    : 'customer_name';
+
+        if ($search !== '') {
+            if ($searchBy === 'invoice_number') {
+                // Invoice: cukup substring biasa
+                $query->where('invoice_number', 'like', "%{$search}%");
+            } else {
+                // Nama & No HP: tokenized — setiap kata harus muncul di kolom (order bebas)
+                $tokens = array_filter(explode(' ', $search));
+                $query->where(function ($q) use ($tokens, $searchBy) {
+                    foreach ($tokens as $token) {
+                        $q->where($searchBy, 'like', "%{$token}%");
+                    }
+                });
+            }
         }
 
         // Filter by followup status
@@ -180,10 +194,12 @@ class SalesController extends Controller
             }
         }
 
-        $sales = $query->orderBy('invoice_date', 'desc')->paginate(20);
+        $sales = $query->orderBy('invoice_date', 'desc')->paginate(20)->appends($request->query());
 
         return view('sales.index', [
-            'sales' => $sales,
+            'sales'    => $sales,
+            'search'   => $search,
+            'searchBy' => $searchBy,
         ]);
     }
 

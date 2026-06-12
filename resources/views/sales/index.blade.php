@@ -19,6 +19,40 @@
             @endif
 
             <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                <!-- Search Bar -->
+                <div class="px-6 py-4 border-b bg-gray-50">
+                    <form method="GET" action="{{ route('sales.index') }}" class="flex flex-wrap gap-2 items-end">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Cari berdasarkan:</label>
+                            <select name="search_by" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <option value="customer_name" {{ ($searchBy ?? 'customer_name') === 'customer_name' ? 'selected' : '' }}>Nama Customer</option>
+                                <option value="phone_number"  {{ ($searchBy ?? '') === 'phone_number'  ? 'selected' : '' }}>No. HP</option>
+                                <option value="invoice_number"{{ ($searchBy ?? '') === 'invoice_number'? 'selected' : '' }}>No. Faktur</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[220px]">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Kata kunci:</label>
+                            <input type="text" name="search" value="{{ $search ?? '' }}"
+                                placeholder="Ketik untuk mencari..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                            Cari
+                        </button>
+                        @if(!empty($search))
+                        <a href="{{ route('sales.index') }}" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 text-sm font-medium">
+                            Reset
+                        </a>
+                        @endif
+                    </form>
+                    @if(!empty($search))
+                    <p class="mt-2 text-xs text-gray-500">
+                        Menampilkan hasil pencarian untuk <span class="font-semibold text-gray-700">"{{ $search }}"</span>
+                        — {{ $sales->total() }} data ditemukan
+                    </p>
+                    @endif
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b">
