@@ -5,11 +5,18 @@
         </h2>
     </x-slot>
 
+@php $settings = \App\Models\QontakSetting::getSettings(); @endphp
     <div class="py-4 sm:py-12">
         <div class="max-w-7xl mx-auto">
             @if (session('success'))
                 <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {{ session('error') }}
                 </div>
             @endif
 
@@ -21,9 +28,20 @@
                     <button onclick="filterByDate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Filter
                     </button>
-                    <a href="{{ route('aftercare.index') }}" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500">
+                    <a href="{{ route('aftercare.index') }}" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 mr-2">
                         Reset Tanggal
                     </a>
+
+                    @if ($status === 'pending')
+                        <form action="{{ route('aftercare.broadcast-all') }}" method="POST" class="inline sm:ml-auto" onsubmit="return confirm('Apakah Anda yakin ingin mengirimkan broadcast WhatsApp ke semua pelanggan pending yang muncul di daftar saat ini?')">
+                            @csrf
+                            <input type="hidden" name="type" value="{{ $type }}">
+                            <input type="hidden" name="date" value="{{ $referenceDate->toDateString() }}">
+                            <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition shadow-sm text-sm">
+                                🚀 Broadcast Semua Hari Ini
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
 
@@ -158,6 +176,13 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
                                         @if ($saleStatus === 'pending')
                                             <div class="flex items-center justify-center gap-2">
+                                                <form action="{{ route('aftercare.send-wa', $sale) }}" method="POST" class="inline" onsubmit="return confirm('Kirim WhatsApp {{ $rowType }} ke {{ addslashes($sale->customer_name) }}?')">
+                                                    @csrf
+                                                    <input type="hidden" name="type" value="{{ $rowType }}">
+                                                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-xs font-semibold transition" title="Kirim template via WhatsApp Business Qontak">
+                                                        💬 Kirim WA
+                                                    </button>
+                                                </form>
                                                 <form action="{{ route('aftercare.complete', $sale) }}" method="POST" class="inline">
                                                     @csrf
                                                     @method('PATCH')
@@ -221,6 +246,9 @@
                     {{ $records->links() }}
                 </div>
             </div>
+        </div>
+
+        <!-- Alpine.js Customization Modal -->
         </div>
     </div>
 </x-app-layout>

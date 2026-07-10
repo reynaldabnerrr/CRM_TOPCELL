@@ -10,11 +10,18 @@
         </div>
     </x-slot>
 
+@php $settings = \App\Models\QontakSetting::getSettings(); @endphp
     <div class="py-4 sm:py-12">
         <div class="max-w-7xl mx-auto">
             @if (session('success'))
                 <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {{ session('error') }}
                 </div>
             @endif
 
@@ -130,17 +137,31 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm space-x-2">
-                                        <a href="{{ route('pending-customers.edit', $customer) }}" class="text-yellow-600 hover:text-yellow-900 text-xs font-medium">
-                                            Edit
-                                        </a>
-                                        <form action="{{ route('pending-customers.destroy', $customer) }}" method="POST" class="inline">
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm flex items-center justify-center gap-3">
+                                        <form action="{{ route('pending-customers.send-wa', $customer) }}" method="POST" class="inline-flex items-center gap-1" x-data="{ selectedType: 'h+1' }" onsubmit="return confirm('Kirim WhatsApp ' + (selectedType === 'h+1' ? 'H+1' : (selectedType === 'h+7' ? 'H+7' : '1 Bulan')) + ' ke {{ addslashes($customer->name) }}?')">
                                             @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900 text-xs font-medium" onclick="return confirm('Hapus data ini?')">
-                                                Hapus
+                                            <input type="hidden" name="type" :value="selectedType">
+                                            <select x-model="selectedType" class="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                                                <option value="h+1">H+1</option>
+                                                <option value="h+7">H+7</option>
+                                                <option value="h+1month">1 Bln</option>
+                                            </select>
+                                            <button type="submit" class="px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-semibold transition" title="Kirim WA Template">
+                                                💬 Kirim
                                             </button>
                                         </form>
+                                        <div class="flex items-center gap-2">
+                                            <a href="{{ route('pending-customers.edit', $customer) }}" class="text-yellow-600 hover:text-yellow-900 text-xs font-medium">
+                                                Edit
+                                            </a>
+                                            <form action="{{ route('pending-customers.destroy', $customer) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900 text-xs font-medium" onclick="return confirm('Hapus data ini?')">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -159,6 +180,8 @@
                     {{ $customers->links() }}
                 </div>
             </div>
+        </div>
+
         </div>
     </div>
 </x-app-layout>

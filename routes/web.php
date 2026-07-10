@@ -76,6 +76,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{pendingCustomer}', [PendingCustomerController::class, 'update'])->name('update');
         Route::delete('/{pendingCustomer}', [PendingCustomerController::class, 'destroy'])->name('destroy');
         Route::post('/{pendingCustomer}/update-followup-checkpoint', [PendingCustomerController::class, 'updateFollowupCheckpoint'])->name('update-followup-checkpoint');
+        Route::post('/{pendingCustomer}/send-wa', [PendingCustomerController::class, 'sendWhatsapp'])->name('send-wa');
+        Route::post('/broadcast-all', [PendingCustomerController::class, 'broadcastAll'])->name('broadcast-all');
         Route::delete('/statuses/{status}', [PendingCustomerController::class, 'destroyStatus'])->name('statuses.destroy');
     });
 
@@ -85,6 +87,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{sale}/complete', [CustomerAfterCareController::class, 'markComplete'])->name('complete');
         Route::patch('/{sale}/skip', [CustomerAfterCareController::class, 'markSkipped'])->name('skip');
         Route::patch('/{sale}/pending', [CustomerAfterCareController::class, 'markPending'])->name('pending');
+        Route::post('/{sale}/send-wa', [CustomerAfterCareController::class, 'sendWhatsapp'])->name('send-wa');
+        Route::post('/broadcast-all', [CustomerAfterCareController::class, 'broadcastAll'])->name('broadcast-all');
     });
 
     // Account Management Routes (superadmin only)
@@ -94,6 +98,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{user}', [AccountManagementController::class, 'destroy'])->name('destroy');
         Route::patch('/{user}/toggle-followup', [AccountManagementController::class, 'toggleFollowup'])->name('toggle-followup');
         Route::patch('/{user}/toggle-aftercare', [AccountManagementController::class, 'toggleAftercare'])->name('toggle-aftercare');
+    });
+
+    // Qontak Settings Routes (superadmin only)
+    Route::middleware('superadmin')->prefix('qontak-settings')->name('qontak-settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\QontakSettingsController::class, 'edit'])->name('edit');
+        Route::patch('/', [\App\Http\Controllers\QontakSettingsController::class, 'update'])->name('update');
+        Route::post('/test-refresh', [\App\Http\Controllers\QontakSettingsController::class, 'testRefresh'])->name('test-refresh');
+        Route::get('/templates', [\App\Http\Controllers\QontakSettingsController::class, 'showTemplates'])->name('templates');
     });
 });
 

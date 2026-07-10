@@ -226,4 +226,214 @@ class PendingCustomerController extends Controller
             ->back()
             ->with('success', 'Status berhasil dihapus. Data calon customer tetap ada.');
     }
+
+    public function sendWhatsapp(Request $request, PendingCustomer $pendingCustomer)
+    {
+        $type = $request->input('type', 'h+1'); // h+1 | h+7 | h+1month
+        $typeField = str_replace('+', '', $type); // h1 | h7 | h1month
+        
+        $templateKey = match($type) {
+            'h+1'      => 'h1',
+            'h+7'      => 'h7',
+            'h+1month' => '1month',
+            default    => 'h1',
+        };
+
+        $settings = \App\Models\QontakSetting::getSettings();
+        $templateField = match($type) {
+            'h+1'      => 'pending_template_h1',
+            'h+7'      => 'pending_template_h7',
+            'h+1month' => 'pending_template_1month',
+            default    => 'pending_template_h1',
+        };
+        $templateId = $settings->$templateField;
+
+        $varsCountField = $templateField . '_vars';
+        $varsCount = $settings->$varsCountField ?? 2;
+
+        if (empty($templateId)) {
+            return back()->with('error', "UUID Template Qontak untuk calon pelanggan {$type} belum diatur di Pengaturan Qontak!");
+        }
+
+        $bodyParams = [];
+        $mappings = $settings->variable_mappings[$templateField] ?? [];
+
+        for ($i = 1; $i <= $varsCount; $i++) {
+            $source = $mappings[$i]['source'] ?? ($i == 1 ? 'customer_name' : 'notes');
+            $customVal = $mappings[$i]['custom_value'] ?? '';
+
+            $valText = match ($source) {
+                'customer_name' => $pendingCustomer->name,
+                'notes'         => $pendingCustomer->notes ?: '-',
+                'item_name'     => '-',
+                'invoice_date'  => $pendingCustomer->entry_date ? $pendingCustomer->entry_date->format('d-m-Y') : '-',
+                'status'        => $pendingCustomer->status->name ?? '-',
+                'custom'        => $customVal,
+                default         => '',
+            };
+
+            $bodyParams[] = [
+                'key' => (string) $i,
+                'value' => 'var_' . $i,
+                'value_text' => $valText,
+            ];
+        }
+
+        $qontakService = new \App\Services\QontakService();
+        $result = $qontakService->sendWhatsappDirect(
+            $pendingCustomer->phone_number,
+            $pendingCustomer->name,
+            $templateId,
+            $bodyParams
+        );
+
+        if ($result['success']) {
+            $dateField = "followup_{$typeField}_last_date";
+            
+            $pendingCustomer->update([
+                $dateField => now()->toDateString(),
+            ]);
+
+            return back()->with('success', "Pesan WhatsApp berhasil dikirim ke {$pendingCustomer->name}!");
+        }
+
+        return back()->with('error', "Gagal mengirim WhatsApp: " . ($result['error'] ?? 'Terjadi kesalahan pada Qontak API.'));
+    }
+
+    /**
+     * Broadcast WA templates to all pending prospective customer records based on active date and type filters
+     */
+    public function broadcastAll(Request $request)
+    {
+        $type = $request->input('type');
+        $referenceDate = $request->input('date') ? \Carbon\Carbon::parse($request->input('date')) : now();
+        $referenceDateStr = $referenceDate->toDateString();
+
+        $query = PendingCustomer::with('status');
+
+        if ($type) {
+            $typeField = str_replace('+', '', $type); // h1 | h7 | h1month
+            $query->whereDate("followup_{$typeField}_date", $referenceDateStr)
+                  ->whereNull("followup_{$typeField}_last_date");
+        } else {
+            $query->where(function ($q) use ($referenceDateStr) {
+                $q->where(function($q2) use ($referenceDateStr) {
+                    $q2->whereDate('followup_h1_date', $referenceDateStr)
+                       ->whereNull('followup_h1_last_date');
+                })->orWhere(function($q2) use ($referenceDateStr) {
+                    $q2->whereDate('followup_h7_date', $referenceDateStr)
+                       ->whereNull('followup_h7_last_date');
+                })->orWhere(function($q2) use ($referenceDateStr) {
+                    $q2->whereDate('followup_h1month_date', $referenceDateStr)
+                       ->whereNull('followup_h1month_last_date');
+                });
+            });
+        }
+
+        if ($request->status_id) {
+            $query->where('status_id', $request->status_id);
+        }
+
+        $records = $query->get();
+
+        if ($records->isEmpty()) {
+            return back()->with('error', 'Tidak ada data calon customer pending yang perlu di-follow-up untuk filter ini.');
+        }
+
+        $settings = \App\Models\QontakSetting::getSettings();
+        $qontakService = new \App\Services\QontakService();
+        $successCount = 0;
+        $failCount = 0;
+        $failDetails = [];
+
+        foreach ($records as $customer) {
+            // Find which due types are active and pending
+            $dueTypes = [];
+            if ($customer->followup_h1_date && $customer->followup_h1_date->toDateString() === $referenceDateStr && !$customer->followup_h1_last_date) {
+                $dueTypes[] = 'h+1';
+            }
+            if ($customer->followup_h7_date && $customer->followup_h7_date->toDateString() === $referenceDateStr && !$customer->followup_h7_last_date) {
+                $dueTypes[] = 'h+7';
+            }
+            if ($customer->followup_h1month_date && $customer->followup_h1month_date->toDateString() === $referenceDateStr && !$customer->followup_h1month_last_date) {
+                $dueTypes[] = 'h+1month';
+            }
+
+            // We must filter active dueTypes if request type filter is active
+            if ($type) {
+                $dueTypes = array_filter($dueTypes, fn($dt) => $dt === $type);
+            }
+
+            foreach ($dueTypes as $dt) {
+                $templateField = match($dt) {
+                    'h+1'      => 'pending_template_h1',
+                    'h+7'      => 'pending_template_h7',
+                    'h+1month' => 'pending_template_1month',
+                };
+                $templateId = $settings->$templateField;
+
+                if (empty($templateId)) {
+                    $failCount++;
+                    $failDetails[] = "{$customer->name} ({$dt}): Template ID belum diatur.";
+                    continue;
+                }
+
+                $varsCountField = $templateField . '_vars';
+                $varsCount = $settings->$varsCountField ?? 2;
+
+                $bodyParams = [];
+                $mappings = $settings->variable_mappings[$templateField] ?? [];
+
+                for ($i = 1; $i <= $varsCount; $i++) {
+                    $source = $mappings[$i]['source'] ?? ($i == 1 ? 'customer_name' : 'notes');
+                    $customVal = $mappings[$i]['custom_value'] ?? '';
+
+                    $valText = match ($source) {
+                        'customer_name' => $customer->name,
+                        'notes'         => $customer->notes ?: '-',
+                        'item_name'     => '-',
+                        'invoice_date'  => $customer->entry_date ? $customer->entry_date->format('d-m-Y') : '-',
+                        'status'        => $customer->status->name ?? '-',
+                        'custom'        => $customVal,
+                        default         => '',
+                    };
+
+                    $bodyParams[] = [
+                        'key' => (string) $i,
+                        'value' => 'var_' . $i,
+                        'value_text' => $valText,
+                    ];
+                }
+
+                $result = $qontakService->sendWhatsappDirect(
+                    $customer->phone_number,
+                    $customer->name,
+                    $templateId,
+                    $bodyParams
+                );
+
+                if ($result['success']) {
+                    $typeField = str_replace('+', '', $dt);
+                    $customer->update([
+                        "followup_{$typeField}_last_date" => now()->toDateString(),
+                    ]);
+                    $successCount++;
+                } else {
+                    $failCount++;
+                    $failDetails[] = "{$customer->name} ({$dt}): " . ($result['error'] ?? 'Gagal API');
+                }
+
+                // Sleep for 1 second between requests to avoid connection timeouts or rate throttling
+                sleep(1);
+            }
+        }
+
+        $message = "Broadcast massal selesai. Sukses: {$successCount}, Gagal: {$failCount}.";
+        if (!empty($failDetails)) {
+            $message .= " Detail kegagalan: " . implode(' | ', $failDetails);
+            return back()->with('error', $message);
+        }
+
+        return back()->with('success', $message);
+    }
 }
