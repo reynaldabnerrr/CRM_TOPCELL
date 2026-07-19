@@ -60,15 +60,25 @@ class ChatController extends Controller
     public function sendMessage(Request $request, Chat $chat)
     {
         $request->validate([
-            'message' => 'required|string',
+            'message' => 'required_without:file|nullable|string',
+            'file' => 'required_without:message|nullable|file|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
-        $text = $request->input('message');
+        $messageType = 'text';
+        $content = '';
 
-        Log::info("ChatController: Attempting to send reply to Room {$chat->room_id}");
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('attachments', 'public');
+            $content = asset('storage/' . $path);
+            $messageType = 'image';
+        } else {
+            $content = $request->input('message');
+        }
+
+        Log::info("ChatController: Attempting to send reply to Room {$chat->room_id} (type: {$messageType})");
 
         // Call Qontak Service to send message
-        $result = $this->qontakService->sendWhatsappReply($chat->room_id, $text);
+        $result = $this->qontakService->sendWhatsappReply($chat->room_id, $content, $messageType);
 
         if ($result['success']) {
             try {
@@ -77,13 +87,13 @@ class ChatController extends Controller
                     'chat_id' => $chat->id,
                     'sender_type' => 'agent',
                     'sender_name' => auth()->user()->name,
-                    'message_type' => 'text',
-                    'message_content' => $text,
+                    'message_type' => $messageType,
+                    'message_content' => $content,
                 ]);
 
                 // Update chat room last message info
                 $chat->update([
-                    'last_message' => $text,
+                    'last_message' => $messageType === 'image' ? '[Gambar]' : $content,
                     'last_message_time' => now()
                 ]);
 
@@ -111,7 +121,9 @@ class ChatController extends Controller
     public function addToPendingCustomers(Request $request, Chat $chat)
     {
         $request->validate([
-            'status_id' => 'required|exists:pending_customer_statuses,id',
+            'create_new_status' => 'required|boolean',
+            'status_id' => 'required_without:new_status_name|nullable|exists:pending_customer_statuses,id',
+            'new_status_name' => 'required_if:create_new_status,true|nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
 
@@ -125,13 +137,26 @@ class ChatController extends Controller
                 ], 422);
             }
 
+            if ($request->boolean('create_new_status')) {
+                // Check if status name already exists
+                $status = \App\Models\PendingCustomerStatus::where('name', $request->new_status_name)->first();
+                if (!$status) {
+                    $status = \App\Models\PendingCustomerStatus::create([
+                        'name' => $request->new_status_name,
+                    ]);
+                }
+                $statusId = $status->id;
+            } else {
+                $statusId = $request->status_id;
+            }
+
             $entryDate = now();
 
             \App\Models\PendingCustomer::create([
                 'name' => $chat->customer_name,
                 'phone_number' => $chat->phone_number,
                 'entry_date' => $entryDate->toDateString(),
-                'status_id' => $request->status_id,
+                'status_id' => $statusId,
                 'notes' => $request->notes ?? 'Ditambahkan langsung dari live chat WhatsApp.',
                 'followup_h1_date' => $entryDate->clone()->addDay()->toDateString(),
                 'followup_h7_date' => $entryDate->clone()->addDays(7)->toDateString(),
@@ -140,7 +165,10 @@ class ChatController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Berhasil menambahkan customer ke daftar Calon Customer!'
+                'message' => 'Berhasil menambahkan customer ke daftar Calon Customer!',
+                'statuses' => $request->boolean('create_new_status') 
+                    ? \App\Models\PendingCustomerStatus::orderBy('name')->get() 
+                    : null
             ]);
         } catch (\Exception $e) {
             Log::error('ChatController: Error adding to pending customer: ' . $e->getMessage());

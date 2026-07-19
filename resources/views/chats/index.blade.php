@@ -188,8 +188,27 @@
                                                         : 'bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm'" 
                                                      class="max-w-[75%] px-4 py-2.5 text-sm leading-relaxed"
                                                 >
-                                                    <!-- Message Text -->
-                                                    <span class="whitespace-pre-wrap select-text" x-text="msg.message_content"></span>
+                                                    <!-- Text Message -->
+                                                    <template x-if="msg.message_type === 'text'">
+                                                        <span class="whitespace-pre-wrap select-text" x-text="msg.message_content"></span>
+                                                    </template>
+                                                    
+                                                    <!-- Image Message -->
+                                                    <template x-if="msg.message_type === 'image'">
+                                                        <div class="space-y-1">
+                                                            <img :src="msg.message_content" class="max-w-xs max-h-60 rounded-xl cursor-zoom-in border border-slate-100 object-cover shadow-sm" @click="window.open(msg.message_content, '_blank')">
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Other Attachment/File Type -->
+                                                    <template x-if="msg.message_type !== 'text' && msg.message_type !== 'image'">
+                                                        <a :href="msg.message_content" target="_blank" class="flex items-center space-x-2 font-semibold hover:underline" :class="msg.sender_type === 'agent' ? 'text-indigo-100' : 'text-indigo-600'">
+                                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                            <span x-text="'File ' + msg.message_type"></span>
+                                                        </a>
+                                                    </template>
                                                 </div>
 
                                                 <!-- Sender & Time Metadata -->
@@ -221,6 +240,9 @@
                     <!-- Input Bar (Fixed Bottom) -->
                     <template x-if="activeRoom">
                         <div class="p-4 border-t border-gray-100 bg-white flex-shrink-0 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+                            <!-- Hidden inputs for media upload and camera capture -->
+                            <input type="file" id="chat-file-input" @change="uploadFile" accept="image/*" class="hidden">
+                            <input type="file" id="chat-camera-input" @change="uploadFile" accept="image/*" capture="environment" class="hidden">
                             <form @submit.prevent="sendReply" class="flex items-end space-x-2">
                                 <div class="flex-1 relative">
                                     <textarea
@@ -233,6 +255,33 @@
                                     ></textarea>
                                 </div>
                                 
+                                <!-- Attachment Button -->
+                                <button
+                                    type="button"
+                                    @click="document.getElementById('chat-file-input').click()"
+                                    :disabled="sending"
+                                    class="p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-700 rounded-xl flex items-center justify-center transition flex-shrink-0 active:scale-95 disabled:opacity-50"
+                                    title="Kirim Gambar"
+                                >
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                    </svg>
+                                </button>
+
+                                <!-- Camera Button -->
+                                <button
+                                    type="button"
+                                    @click="document.getElementById('chat-camera-input').click()"
+                                    :disabled="sending"
+                                    class="p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-700 rounded-xl flex items-center justify-center transition flex-shrink-0 active:scale-95 disabled:opacity-50"
+                                    title="Buka Kamera"
+                                >
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </button>
+
                                 <button
                                     type="submit"
                                     :disabled="sending || !newMessage.trim()"
@@ -316,9 +365,20 @@
                                     </div>
                                 </div>
 
-                                <!-- Status Select -->
-                                <div class="space-y-1.5">
-                                    <label class="block text-xs font-bold text-slate-700">Status Awal</label>
+                                <!-- Create New Status Checkbox -->
+                                <div class="flex items-center space-x-2 py-1">
+                                    <input 
+                                        type="checkbox" 
+                                        id="create_new_status" 
+                                        x-model="create_new_status" 
+                                        class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 cursor-pointer"
+                                    >
+                                    <label for="create_new_status" class="text-xs font-semibold text-slate-700 cursor-pointer">Buat Status Baru</label>
+                                </div>
+
+                                <!-- Status Select (Toggled by checkbox) -->
+                                <div class="space-y-1.5" x-show="!create_new_status">
+                                    <label class="block text-xs font-bold text-slate-700">Pilih Status Awal</label>
                                     <select 
                                         x-model="leadForm.status_id" 
                                         class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white text-slate-700"
@@ -327,6 +387,17 @@
                                             <option :value="status.id" x-text="status.name" :selected="leadForm.status_id == status.id"></option>
                                         </template>
                                     </select>
+                                </div>
+
+                                <!-- Status Input (Toggled by checkbox) -->
+                                <div class="space-y-1.5" x-show="create_new_status" style="display: none;">
+                                    <label class="block text-xs font-bold text-slate-700">Nama Status Baru</label>
+                                    <input 
+                                        type="text" 
+                                        x-model="leadForm.new_status_name" 
+                                        placeholder="Ketik nama status baru..."
+                                        class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white text-slate-700"
+                                    >
                                 </div>
 
                                 <!-- Notes Textarea -->
@@ -384,8 +455,10 @@
                 addingLead: false,
                 deletingChat: false,
                 showLeadModal: false,
+                create_new_status: false,
                 leadForm: {
                     status_id: '',
+                    new_status_name: '',
                     notes: 'Ditambahkan langsung dari live chat WhatsApp.'
                 },
 
@@ -564,14 +637,20 @@
 
                 openLeadModal() {
                     if (!this.activeRoom) return;
+                    this.create_new_status = false;
                     this.leadForm.status_id = this.statuses.length > 0 ? this.statuses[0].id : '';
+                    this.leadForm.new_status_name = '';
                     this.leadForm.notes = 'Ditambahkan langsung dari live chat WhatsApp.';
                     this.showLeadModal = true;
                 },
 
                 async submitLead() {
                     if (this.addingLead || !this.activeRoom) return;
-                    if (!this.leadForm.status_id) {
+                    if (this.create_new_status && !this.leadForm.new_status_name.trim()) {
+                        alert('Silakan masukkan nama status baru.');
+                        return;
+                    }
+                    if (!this.create_new_status && !this.leadForm.status_id) {
                         alert('Silakan pilih status terlebih dahulu.');
                         return;
                     }
@@ -585,13 +664,18 @@
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             },
                             body: JSON.stringify({
-                                status_id: this.leadForm.status_id,
+                                create_new_status: this.create_new_status,
+                                status_id: this.create_new_status ? null : this.leadForm.status_id,
+                                new_status_name: this.create_new_status ? this.leadForm.new_status_name : null,
                                 notes: this.leadForm.notes
                             })
                         });
                         const data = await res.json();
                         if (res.ok && data.success) {
                             alert(data.message);
+                            if (data.statuses) {
+                                this.statuses = data.statuses;
+                            }
                             this.showLeadModal = false;
                         } else {
                             alert(data.error || 'Gagal menambahkan calon customer.');
@@ -600,6 +684,49 @@
                         alert('Terjadi kesalahan jaringan.');
                     } finally {
                         this.addingLead = false;
+                    }
+                },
+
+                async uploadFile(e) {
+                    const file = e.target.files[0];
+                    if (!file || !this.activeRoom) return;
+
+                    if (!confirm(`Kirim gambar "${file.name}" ke customer?`)) {
+                        e.target.value = '';
+                        return;
+                    }
+
+                    this.sending = true;
+                    this.errorMessage = '';
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        const url = '{{ route("chats.send", ":id") }}'.replace(':id', this.activeRoom.id);
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: formData
+                        });
+
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            this.messages.push(data.message);
+                            this.scrollToBottom();
+                            this.fetchRooms();
+                        } else {
+                            this.errorMessage = data.error || 'Gagal mengirim gambar.';
+                            setTimeout(() => { this.errorMessage = ''; }, 5000);
+                        }
+                    } catch (err) {
+                        this.errorMessage = 'Terjadi kesalahan jaringan saat mengirim gambar.';
+                        setTimeout(() => { this.errorMessage = ''; }, 5000);
+                    } finally {
+                        this.sending = false;
+                        e.target.value = '';
                     }
                 },
 

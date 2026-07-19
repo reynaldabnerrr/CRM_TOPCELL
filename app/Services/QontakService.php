@@ -316,7 +316,7 @@ class QontakService
      * @param bool $isRetry Internal flag to avoid infinite recursion
      * @return array [ 'success' => bool, 'response' => array|string|null, 'error' => string|null ]
      */
-    public function sendWhatsappReply(string $roomId, string $text, bool $isRetry = false): array
+    public function sendWhatsappReply(string $roomId, string $text, string $messageType = 'text', bool $isRetry = false): array
     {
         $settings = $this->getSettings();
         
@@ -332,11 +332,22 @@ class QontakService
             ];
         }
 
-        $payload = [
-            'room_id' => $roomId,
-            'type'    => 'text',
-            'text'    => $text,
-        ];
+        if ($messageType === 'image') {
+            $payload = [
+                'room_id' => $roomId,
+                'type'    => 'image',
+                'message' => [
+                    'image_url' => $text,
+                    'caption'   => '',
+                ]
+            ];
+        } else {
+            $payload = [
+                'room_id' => $roomId,
+                'type'    => 'text',
+                'text'    => $text,
+            ];
+        }
 
         try {
             Log::info('Replying WhatsApp via Qontak:', [
@@ -361,7 +372,7 @@ class QontakService
                 
                 if ($refreshResult['success']) {
                     Log::info('Token refresh succeeded. Retrying WhatsApp reply...');
-                    return $this->sendWhatsappReply($roomId, $text, true);
+                    return $this->sendWhatsappReply($roomId, $text, $messageType, true);
                 }
             }
 

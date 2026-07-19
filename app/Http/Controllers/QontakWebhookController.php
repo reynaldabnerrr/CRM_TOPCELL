@@ -47,6 +47,33 @@ class QontakWebhookController extends Controller
             ?? $payload['message']['text'] 
             ?? '';
 
+        $messageType = 'text';
+        $messageContent = $text;
+
+        $rawType = $payload['data']['message']['type']
+            ?? $payload['data']['type']
+            ?? $payload['type']
+            ?? null;
+
+        if ($rawType && $rawType !== 'text') {
+            $messageType = $rawType;
+            $mediaUrl = $payload['data']['message']['image']['url']
+                ?? $payload['data']['message']['document']['url']
+                ?? $payload['data']['message']['video']['url']
+                ?? $payload['data']['message']['audio']['url']
+                ?? $payload['data']['message']['file']['url']
+                ?? $payload['data']['message']['attachment']['url']
+                ?? $payload['data']['attachment']['url']
+                ?? $payload['attachment']['url']
+                ?? $payload['data']['media_url']
+                ?? null;
+
+            if ($mediaUrl) {
+                $messageContent = $mediaUrl;
+                $text = $messageType === 'image' ? '[Gambar]' : '[' . ucfirst($messageType) . ']';
+            }
+        }
+
         $phone = $payload['phone_number'] 
             ?? $payload['room']['account_uniq_id'] 
             ?? $payload['data']['room']['account_uniq_id'] 
@@ -134,8 +161,8 @@ class QontakWebhookController extends Controller
                 'message_id' => $messageId,
                 'sender_type' => 'customer',
                 'sender_name' => $name,
-                'message_type' => 'text',
-                'message_content' => $text,
+                'message_type' => $messageType,
+                'message_content' => $messageContent,
             ]);
 
             Log::info("Qontak Webhook: Message from customer '{$name}' processed successfully. Room ID: {$roomId}");
