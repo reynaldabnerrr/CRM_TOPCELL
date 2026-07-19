@@ -64,10 +64,10 @@
             }
         </style>
 
-        <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white flex flex-col lg:flex-row w-full h-full">
+        <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white flex flex-col lg:flex-row w-full h-full min-h-0 overflow-hidden">
             
             <!-- LEFT COLUMN: Room list -->
-            <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-slate-100 flex-col flex-shrink-0 bg-slate-50/50">
+            <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-slate-100 flex-col flex-shrink-0 bg-slate-50/50 h-full max-h-full overflow-hidden">
                 <!-- Sidebar Header -->
                 <div class="px-5 py-4 border-b border-slate-100 bg-white flex items-center justify-between">
                     <div class="flex items-center space-x-2.5">
@@ -157,7 +157,7 @@
             </div>
 
             <!-- RIGHT COLUMN: Active conversation -->
-            <div :class="showConversationOnMobile ? 'flex' : 'hidden lg:flex'" class="flex-1 flex-col min-w-0 bg-white relative">
+            <div :class="showConversationOnMobile ? 'flex' : 'hidden lg:flex'" class="flex-1 flex-col min-w-0 bg-white relative h-full max-h-full overflow-hidden">
                 
                 <!-- Top Info Header -->
                 <template x-if="activeRoom">
