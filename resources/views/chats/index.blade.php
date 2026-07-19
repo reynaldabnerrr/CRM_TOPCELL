@@ -260,6 +260,24 @@
                     this.pollingInterval = setInterval(() => {
                         this.fetchRooms();
                     }, 4000);
+
+                    // Initialize global window state for active room to guide sidebar notifications
+                    window.chatSystemData = {
+                        activeRoomId: null
+                    };
+
+                    // Check if room parameter is present in URL to auto-select
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const roomId = urlParams.get('room');
+                    if (roomId) {
+                        const checkAndSelect = () => {
+                            const room = this.rooms.find(r => r.room_id === roomId || String(r.id) === roomId);
+                            if (room) {
+                                this.selectRoom(room);
+                            }
+                        };
+                        setTimeout(checkAndSelect, 500);
+                    }
                 },
 
                 get filteredRooms() {
@@ -294,6 +312,11 @@
                 async selectRoom(room) {
                     this.activeRoom = room;
                     this.showConversationOnMobile = true;
+
+                    // Update global active room state
+                    if (window.chatSystemData) {
+                        window.chatSystemData.activeRoomId = room.id;
+                    }
                     this.loadingMessages = true;
                     this.errorMessage = '';
                     this.messages = [];

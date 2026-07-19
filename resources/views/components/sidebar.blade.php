@@ -198,10 +198,76 @@
 
 </div>
 
+<style>
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    .toast-slide-in {
+        animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .toast-slide-out {
+        animation: slideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>
+
+<!-- Global Toast Notification Container -->
+<div id="global-toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full px-4"></div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const badge = document.getElementById('sidebar-unread-badge');
+        let lastRoomStates = {};
+        let isInitialized = false;
         
+        function showToast(name, text, roomId) {
+            const container = document.getElementById('global-toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto w-full bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl p-4 flex items-start gap-3 cursor-pointer transform translate-x-full opacity-0 toast-slide-in transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5';
+            
+            toast.onclick = function() {
+                window.location.href = '{{ route("chats.index") }}?room=' + roomId;
+            };
+
+            const avatarChar = name ? name.charAt(0).toUpperCase() : 'W';
+            
+            toast.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center text-sm flex-shrink-0">
+                    ${avatarChar}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-800 truncate">${name}</span>
+                        <span class="text-3xs text-indigo-600 font-semibold px-2 py-0.5 bg-indigo-50 rounded-full">Baru</span>
+                    </div>
+                    <p class="text-xs text-slate-500 truncate mt-1">${text || 'Mengirim pesan baru'}</p>
+                </div>
+                <button class="text-slate-400 hover:text-slate-600 flex-shrink-0" onclick="event.stopPropagation(); this.closest('.pointer-events-auto').remove();">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast) {
+                    toast.classList.remove('toast-slide-in');
+                    toast.classList.add('toast-slide-out');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }
+            }, 6000);
+        }
+
         async function updateSidebarBadge() {
             try {
                 const res = await fetch('{{ route("chats.rooms") }}');
@@ -223,13 +289,43 @@
                             badge.style.display = 'none';
                         }
                     }
+
+                    // Compare for new message notifications
+                    if (isInitialized) {
+                        rooms.forEach(room => {
+                            const lastState = lastRoomStates[room.id];
+                            const currentUnread = parseInt(room.unread_count || 0);
+                            
+                            // If unread count has increased and last message time has changed
+                            if (lastState && currentUnread > lastState.unread_count && room.last_message_time !== lastState.last_message_time) {
+                                // Do not alert if we are currently on the chats page AND this room is active
+                                const onChatsPage = window.location.pathname.includes('/chats');
+                                const isRoomActive = onChatsPage && window.chatSystemData && window.chatSystemData.activeRoomId === room.id;
+                                
+                                if (!isRoomActive) {
+                                    showToast(room.customer_name, room.last_message, room.room_id);
+                                }
+                            }
+                        });
+                    }
+
+                    // Store new room states
+                    rooms.forEach(room => {
+                        lastRoomStates[room.id] = {
+                            unread_count: parseInt(room.unread_count || 0),
+                            last_message_time: room.last_message_time,
+                            last_message: room.last_message
+                        };
+                    });
+                    isInitialized = true;
                 }
             } catch (err) {
                 // Fail silently to avoid console noise
             }
         }
 
-        // Poll every 5 seconds
+        // Run immediately, then poll every 5 seconds
+        updateSidebarBadge();
         setInterval(updateSidebarBadge, 5000);
     });
 </script>
