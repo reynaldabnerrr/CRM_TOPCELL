@@ -379,24 +379,10 @@ class QontakService
                 }
             }
 
-            $filename = $localFilePath ? basename($localFilePath) : basename($imageUrl);
             $payload = [
-                'room_id' => $roomId,
-                'type'    => 'image',
-                'image'   => [
-                    'url'      => $imageUrl,
-                    'link'     => $imageUrl,
-                    'filename' => $filename,
-                    'caption'  => '',
-                ],
-                'message' => [
-                    'image' => [
-                        'url'      => $imageUrl,
-                        'link'     => $imageUrl,
-                        'filename' => $filename,
-                        'caption'  => '',
-                    ]
-                ]
+                'room_id'  => $roomId,
+                'type'     => 'image',
+                'file_url' => $imageUrl,
             ];
         } else {
             $payload = [
