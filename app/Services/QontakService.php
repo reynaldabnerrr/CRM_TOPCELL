@@ -249,19 +249,11 @@ class QontakService
             ];
         }
 
-        if (empty($settings->client_id) || empty($settings->client_secret)) {
-            Log::warning('Qontak Token Auto-Refresh Skipped: Client ID or Client Secret is empty in settings.');
-            return [
-                'success' => false,
-                'error'   => 'Client ID atau Client Secret kosong. Auto-refresh token dinonaktifkan.',
-            ];
-        }
-
         try {
             Log::info('Refreshing Qontak Access Token...');
 
-            $clientId = $settings->client_id;
-            $clientSecret = $settings->client_secret;
+            $clientId = $settings->client_id ?: self::CLIENT_ID;
+            $clientSecret = $settings->client_secret ?: self::CLIENT_SECRET;
 
             $response = Http::timeout(15)->post($url, [
                 'refresh_token' => $refreshToken,
