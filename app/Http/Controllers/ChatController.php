@@ -66,11 +66,14 @@ class ChatController extends Controller
 
         $messageType = 'text';
         $content = '';
+        $localFilePath = null;
 
         if ($request->hasFile('file')) {
+            // Store locally for display in CRM
             $path = $request->file('file')->store('attachments', 'public');
             $filename = basename($path);
-            // Use dedicated Laravel route instead of storage symlink URL
+            $localFilePath = storage_path('app/public/attachments/' . $filename);
+            // Display URL (served via our route)
             $content = url('/attachments/' . $filename);
             $messageType = 'image';
         } else {
@@ -80,7 +83,7 @@ class ChatController extends Controller
         Log::info("ChatController: Attempting to send reply to Room {$chat->room_id} (type: {$messageType})");
 
         // Call Qontak Service to send message
-        $result = $this->qontakService->sendWhatsappReply($chat->room_id, $content, $messageType);
+        $result = $this->qontakService->sendWhatsappReply($chat->room_id, $content, $messageType, false, $localFilePath);
 
         if ($result['success']) {
             try {

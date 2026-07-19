@@ -309,6 +309,40 @@ class QontakService
     }
 
     /**
+     * Upload a local file to Qontak's file hosting service.
+     * Returns the hosted URL to use in message payloads.
+     */
+    public function uploadFileToQontak(string $localFilePath, string $accessToken, string $baseUrl): array
+    {
+        $uploadUrl = rtrim($baseUrl, '/') . '/api/open/v1/file_uploader';
+
+        try {
+            $response = Http::withToken($accessToken)
+                ->timeout(30)
+                ->attach('file', file_get_contents($localFilePath), basename($localFilePath))
+                ->post($uploadUrl);
+
+            Log::info('Qontak file_uploader response status: ' . $response->status());
+            Log::info('Qontak file_uploader response body: ' . $response->body());
+
+            if ($response->successful()) {
+                $data = $response->json();
+                // Try common response keys
+                $url = $data['url'] ?? $data['data']['url'] ?? $data['file_url'] ?? $data['data']['file_url'] ?? null;
+                if ($url) {
+                    return ['success' => true, 'url' => $url];
+                }
+                return ['success' => false, 'error' => 'URL not found in upload response: ' . $response->body()];
+            }
+
+            return ['success' => false, 'error' => 'Upload failed with status ' . $response->status() . ': ' . $response->body()];
+        } catch (\Exception $e) {
+            Log::error('Qontak file upload exception: ' . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Send WhatsApp text message to a customer within active session window (reply)
      *
      * @param string $roomId WhatsApp room ID (obtained from Webhook)
@@ -316,7 +350,7 @@ class QontakService
      * @param bool $isRetry Internal flag to avoid infinite recursion
      * @return array [ 'success' => bool, 'response' => array|string|null, 'error' => string|null ]
      */
-    public function sendWhatsappReply(string $roomId, string $text, string $messageType = 'text', bool $isRetry = false): array
+    public function sendWhatsappReply(string $roomId, string $text, string $messageType = 'text', bool $isRetry = false, ?string $localFilePath = null): array
     {
         $settings = $this->getSettings();
         
@@ -333,17 +367,29 @@ class QontakService
         }
 
         if ($messageType === 'image') {
+            // Upload file to Qontak servers first to get a hosted URL
+            $imageUrl = $text; // fallback to our URL
+            if ($localFilePath && file_exists($localFilePath)) {
+                $uploadResult = $this->uploadFileToQontak($localFilePath, $accessToken, $baseUrl);
+                if ($uploadResult['success'] && !empty($uploadResult['url'])) {
+                    $imageUrl = $uploadResult['url'];
+                    Log::info('Qontak: File uploaded successfully, using Qontak URL: ' . $imageUrl);
+                } else {
+                    Log::warning('Qontak: File upload failed, falling back to local URL. Error: ' . ($uploadResult['error'] ?? 'unknown'));
+                }
+            }
+
             $payload = [
                 'room_id' => $roomId,
                 'type'    => 'image',
                 'file'    => [
-                    'url' => $text,
+                    'url' => $imageUrl,
                 ],
                 'image'   => [
-                    'url' => $text,
+                    'url' => $imageUrl,
                 ],
                 'message' => [
-                    'image_url' => $text,
+                    'image_url' => $imageUrl,
                     'caption'   => '',
                 ]
             ];
