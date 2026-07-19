@@ -1,3 +1,4 @@
+<x-app-layout>
     <div class="-m-6">
         <div>
             <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white flex flex-col lg:flex-row" style="height: calc(100dvh - 3.5rem); min-height: 400px;">
