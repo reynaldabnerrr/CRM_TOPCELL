@@ -115,6 +115,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/rooms', [\App\Http\Controllers\ChatController::class, 'getRooms'])->name('rooms');
         Route::get('/{chat}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('messages');
         Route::post('/{chat}/send', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
+        Route::post('/{chat}/add-to-pending', [\App\Http\Controllers\ChatController::class, 'addToPendingCustomers'])->name('add-to-pending');
+        Route::delete('/{chat}', [\App\Http\Controllers\ChatController::class, 'destroy'])->name('destroy');
     });
 });
 

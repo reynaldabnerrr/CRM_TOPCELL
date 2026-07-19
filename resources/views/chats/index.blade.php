@@ -113,7 +113,32 @@
                                 </div>
                             </div>
                             
-
+                            <!-- Action buttons -->
+                            <div class="flex items-center space-x-2 flex-shrink-0">
+                                <!-- Add to Calon Customer -->
+                                <button 
+                                    @click="addToPending()" 
+                                    :disabled="addingLead"
+                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 border border-indigo-100 rounded-lg text-xs font-semibold text-indigo-700 transition"
+                                >
+                                    <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                    <span x-text="addingLead ? 'Memproses...' : 'Tambah Calon Customer'"></span>
+                                </button>
+                                
+                                <!-- Delete Chat -->
+                                <button 
+                                    @click="deleteChat()" 
+                                    :disabled="deletingChat"
+                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 hover:bg-red-100 disabled:opacity-50 border border-red-100 rounded-lg text-xs font-semibold text-red-700 transition"
+                                >
+                                    <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span x-text="deletingChat ? 'Menghapus...' : 'Hapus Chat'"></span>
+                                </button>
+                            </div>
                         </div>
                     </template>
 
@@ -254,6 +279,8 @@
                 pollingInterval: null,
                 messagesPollingInterval: null,
                 showConversationOnMobile: false,
+                addingLead: false,
+                deletingChat: false,
 
                 init() {
                     // Poll for rooms list updates every 4 seconds
@@ -422,6 +449,62 @@
                     if (!dateString) return '';
                     const date = new Date(dateString);
                     return date.toLocaleDateString([], { day: '2-digit', month: 'short' }) + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                },
+
+                async addToPending() {
+                    if (this.addingLead || !this.activeRoom) return;
+                    this.addingLead = true;
+                    try {
+                        const url = '{{ route("chats.add-to-pending", ":id") }}'.replace(':id', this.activeRoom.id);
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            alert(data.message);
+                        } else {
+                            alert(data.error || 'Gagal menambahkan calon customer.');
+                        }
+                    } catch (err) {
+                        alert('Terjadi kesalahan jaringan.');
+                    } finally {
+                        this.addingLead = false;
+                    }
+                },
+
+                async deleteChat() {
+                    if (this.deletingChat || !this.activeRoom) return;
+                    if (!confirm('Apakah Anda yakin ingin menghapus chat ini beserta riwayat pesannya? Tindakan ini tidak dapat dibatalkan.')) return;
+                    
+                    this.deletingChat = true;
+                    try {
+                        const url = '{{ route("chats.destroy", ":id") }}'.replace(':id', this.activeRoom.id);
+                        const res = await fetch(url, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            alert(data.message);
+                            // Remove active room from local rooms list
+                            this.rooms = this.rooms.filter(r => r.id !== this.activeRoom.id);
+                            this.activeRoom = null;
+                            this.showConversationOnMobile = false;
+                        } else {
+                            alert(data.error || 'Gagal menghapus chat.');
+                        }
+                    } catch (err) {
+                        alert('Terjadi kesalahan jaringan.');
+                    } finally {
+                        this.deletingChat = false;
+                    }
                 }
             }
         }

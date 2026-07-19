@@ -106,4 +106,76 @@ class ChatController extends Controller
             'error' => $result['error'] ?? 'Gagal mengirim pesan melalui Qontak.',
         ], 422);
     }
+
+    /**
+     * Add the chat customer to the PendingCustomer (Calon Customer) list.
+     */
+    public function addToPendingCustomers(Chat $chat)
+    {
+        try {
+            // Check if customer already exists in pending customers by phone number
+            $exists = \App\Models\PendingCustomer::where('phone_number', $chat->phone_number)->exists();
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Customer ini sudah terdaftar sebagai Calon Customer.'
+                ], 422);
+            }
+
+            // Get the first status in the table (or create a default one if none exists)
+            $status = \App\Models\PendingCustomerStatus::first();
+            if (!$status) {
+                $status = \App\Models\PendingCustomerStatus::create(['name' => 'Baru']);
+            }
+
+            $entryDate = now();
+
+            \App\Models\PendingCustomer::create([
+                'name' => $chat->customer_name,
+                'phone_number' => $chat->phone_number,
+                'entry_date' => $entryDate->toDateString(),
+                'status_id' => $status->id,
+                'notes' => 'Ditambahkan langsung dari live chat WhatsApp.',
+                'followup_h1_date' => $entryDate->clone()->addDay()->toDateString(),
+                'followup_h7_date' => $entryDate->clone()->addDays(7)->toDateString(),
+                'followup_h1month_date' => $entryDate->clone()->addMonth(1)->toDateString(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Berhasil menambahkan customer ke daftar Calon Customer!'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('ChatController: Error adding to pending customer: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Terjadi kesalahan saat menambahkan data.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete the chat room and its messages.
+     */
+    public function destroy(Chat $chat)
+    {
+        try {
+            // Delete all associated messages first
+            $chat->messages()->delete();
+            
+            // Delete the chat room
+            $chat->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Chat berhasil dihapus.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('ChatController: Error deleting chat room: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Gagal menghapus chat.'
+            ], 500);
+        }
+    }
 }
