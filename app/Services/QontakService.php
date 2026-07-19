@@ -359,6 +359,7 @@ class QontakService
             Log::info('Replying WhatsApp via Qontak:', [
                 'url'     => $url,
                 'room_id' => $roomId,
+                'payload' => $payload,
             ]);
 
             $response = Http::withToken($accessToken)
@@ -369,6 +370,10 @@ class QontakService
                 ->post($url, $payload);
 
             Log::info('Qontak Reply API Response Status: ' . $response->status());
+
+            if (!$response->successful()) {
+                Log::error('Qontak Reply API Error Body: ' . $response->body());
+            }
 
             // Handle token expiration (401 Unauthorized)
             if ($response->status() === 401 && !$isRetry) {

@@ -50,13 +50,14 @@ class QontakWebhookController extends Controller
         $messageType = 'text';
         $messageContent = $text;
 
-        $rawType = $payload['data']['message']['type']
+        $rawType = $payload['type']
             ?? $payload['data']['type']
-            ?? $payload['type']
+            ?? $payload['data']['message']['type']
             ?? null;
 
-        if ($rawType && $rawType !== 'text') {
-            $messageType = $rawType;
+        // Normalize type: 'image', 'document', 'video', 'audio' are all media types
+        if ($rawType && in_array($rawType, ['image', 'document', 'video', 'audio', 'file', 'sticker'])) {
+            $messageType = $rawType === 'sticker' ? 'image' : $rawType;
             $mediaUrl = $payload['file']['url']
                 ?? $payload['data']['file']['url']
                 ?? $payload['data']['message']['image']['url']
