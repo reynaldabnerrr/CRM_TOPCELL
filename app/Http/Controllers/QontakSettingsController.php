@@ -253,7 +253,7 @@ class QontakSettingsController extends Controller
         }
 
         // Detect dynamic webhook endpoint URL
-        $webhookUrl = rtrim(request()->getSchemeAndHttpHost(), '/') . '/qontak/webhook';
+        $webhookUrl = route('qontak.webhook');
         $baseUrl = rtrim($settings->base_url, '/');
         
         // Dynamically choose endpoint path
