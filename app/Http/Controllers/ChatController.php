@@ -23,7 +23,8 @@ class ChatController extends Controller
     public function index()
     {
         $chats = Chat::orderBy('last_message_time', 'desc')->get();
-        return view('chats.index', compact('chats'));
+        $statuses = \App\Models\PendingCustomerStatus::orderBy('name')->get();
+        return view('chats.index', compact('chats', 'statuses'));
     }
 
     /**
@@ -107,11 +108,13 @@ class ChatController extends Controller
         ], 422);
     }
 
-    /**
-     * Add the chat customer to the PendingCustomer (Calon Customer) list.
-     */
-    public function addToPendingCustomers(Chat $chat)
+    public function addToPendingCustomers(Request $request, Chat $chat)
     {
+        $request->validate([
+            'status_id' => 'required|exists:pending_customer_statuses,id',
+            'notes' => 'nullable|string',
+        ]);
+
         try {
             // Check if customer already exists in pending customers by phone number
             $exists = \App\Models\PendingCustomer::where('phone_number', $chat->phone_number)->exists();
@@ -122,20 +125,14 @@ class ChatController extends Controller
                 ], 422);
             }
 
-            // Get the first status in the table (or create a default one if none exists)
-            $status = \App\Models\PendingCustomerStatus::first();
-            if (!$status) {
-                $status = \App\Models\PendingCustomerStatus::create(['name' => 'Baru']);
-            }
-
             $entryDate = now();
 
             \App\Models\PendingCustomer::create([
                 'name' => $chat->customer_name,
                 'phone_number' => $chat->phone_number,
                 'entry_date' => $entryDate->toDateString(),
-                'status_id' => $status->id,
-                'notes' => 'Ditambahkan langsung dari live chat WhatsApp.',
+                'status_id' => $request->status_id,
+                'notes' => $request->notes ?? 'Ditambahkan langsung dari live chat WhatsApp.',
                 'followup_h1_date' => $entryDate->clone()->addDay()->toDateString(),
                 'followup_h7_date' => $entryDate->clone()->addDays(7)->toDateString(),
                 'followup_h1month_date' => $entryDate->clone()->addMonth(1)->toDateString(),

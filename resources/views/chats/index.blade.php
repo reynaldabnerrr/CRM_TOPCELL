@@ -16,7 +16,7 @@
 
     <div class="py-4">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div x-data="chatSystem({{ json_encode($chats) }})" class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col lg:flex-row h-[calc(100vh-14rem)] min-h-[500px]">
+            <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col lg:flex-row h-[calc(100vh-14rem)] min-h-[500px]">
                 
                 <!-- LEFT COLUMN: Room list -->
                 <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-gray-100 flex-col flex-shrink-0 bg-gray-50/50">
@@ -117,7 +117,7 @@
                             <div class="flex items-center space-x-2 flex-shrink-0">
                                 <!-- Add to Calon Customer -->
                                 <button 
-                                    @click="addToPending()" 
+                                    @click="openLeadModal()" 
                                     :disabled="addingLead"
                                     class="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 border border-indigo-100 rounded-lg text-xs font-semibold text-indigo-700 transition"
                                 >
@@ -260,15 +260,117 @@
 
                 </div>
 
+                <!-- Lead Modal Overlay -->
+                <div 
+                    x-show="showLeadModal" 
+                    class="fixed inset-0 z-50 overflow-y-auto"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    style="display: none;"
+                >
+                    <!-- Backdrop -->
+                    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" @click="showLeadModal = false"></div>
+
+                    <!-- Modal Content Wrapper -->
+                    <div class="flex min-h-full items-center justify-center p-4 text-center">
+                        <div 
+                            x-show="showLeadModal"
+                            x-transition:enter="transition ease-out duration-300"
+                            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                            x-transition:leave="transition ease-in duration-200"
+                            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                            class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all w-full max-w-md border border-slate-100"
+                        >
+                            <!-- Header -->
+                            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <h3 class="text-sm font-bold text-slate-800 flex items-center">
+                                    <svg class="h-4 w-4 text-indigo-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                    Tambah Calon Customer
+                                </h3>
+                                <button @click="showLeadModal = false" class="text-slate-400 hover:text-slate-600 transition p-1 rounded-lg hover:bg-slate-50">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Form Body -->
+                            <div class="p-6 space-y-4">
+                                <!-- Info Card -->
+                                <div class="bg-indigo-50/50 border border-indigo-100/50 rounded-xl p-3 flex flex-col gap-1">
+                                    <div class="flex items-center text-xs">
+                                        <span class="w-20 font-semibold text-slate-500">Nama:</span>
+                                        <span class="font-bold text-slate-800 truncate" x-text="activeRoom ? activeRoom.customer_name : ''"></span>
+                                    </div>
+                                    <div class="flex items-center text-xs">
+                                        <span class="w-20 font-semibold text-slate-500">Nomor HP:</span>
+                                        <span class="font-mono font-bold text-indigo-700" x-text="activeRoom ? activeRoom.phone_number : ''"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Status Select -->
+                                <div class="space-y-1.5">
+                                    <label class="block text-xs font-bold text-slate-700">Status Awal</label>
+                                    <select 
+                                        x-model="leadForm.status_id" 
+                                        class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white text-slate-700"
+                                    >
+                                        <template x-for="status in statuses" :key="status.id">
+                                            <option :value="status.id" x-text="status.name" :selected="leadForm.status_id == status.id"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <!-- Notes Textarea -->
+                                <div class="space-y-1.5">
+                                    <label class="block text-xs font-bold text-slate-700">Catatan</label>
+                                    <textarea 
+                                        x-model="leadForm.notes" 
+                                        rows="3" 
+                                        placeholder="Ketik catatan di sini..."
+                                        class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none bg-slate-50/50 focus:bg-white text-slate-700"
+                                    ></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Footer Actions -->
+                            <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-2">
+                                <button 
+                                    @click="showLeadModal = false" 
+                                    class="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 transition"
+                                >
+                                    Batal
+                                </button>
+                                <button 
+                                    @click="submitLead()" 
+                                    :disabled="addingLead"
+                                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-md shadow-indigo-100 active:scale-95"
+                                >
+                                    <span x-text="addingLead ? 'Menyimpan...' : 'Simpan'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
     <!-- Script Block for Chat Logic -->
     <script>
-        function chatSystem(initialRooms) {
+        function chatSystem(initialRooms, initialStatuses) {
             return {
                 rooms: initialRooms,
+                statuses: initialStatuses,
                 activeRoom: null,
                 messages: [],
                 newMessage: '',
@@ -281,6 +383,11 @@
                 showConversationOnMobile: false,
                 addingLead: false,
                 deletingChat: false,
+                showLeadModal: false,
+                leadForm: {
+                    status_id: '',
+                    notes: 'Ditambahkan langsung dari live chat WhatsApp.'
+                },
 
                 init() {
                     // Poll for rooms list updates every 4 seconds
@@ -452,7 +559,22 @@
                 },
 
                 async addToPending() {
+                    // Deprecated - replaced by openLeadModal/submitLead
+                },
+
+                openLeadModal() {
+                    if (!this.activeRoom) return;
+                    this.leadForm.status_id = this.statuses.length > 0 ? this.statuses[0].id : '';
+                    this.leadForm.notes = 'Ditambahkan langsung dari live chat WhatsApp.';
+                    this.showLeadModal = true;
+                },
+
+                async submitLead() {
                     if (this.addingLead || !this.activeRoom) return;
+                    if (!this.leadForm.status_id) {
+                        alert('Silakan pilih status terlebih dahulu.');
+                        return;
+                    }
                     this.addingLead = true;
                     try {
                         const url = '{{ route("chats.add-to-pending", ":id") }}'.replace(':id', this.activeRoom.id);
@@ -461,11 +583,16 @@
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            }
+                            },
+                            body: JSON.stringify({
+                                status_id: this.leadForm.status_id,
+                                notes: this.leadForm.notes
+                            })
                         });
                         const data = await res.json();
                         if (res.ok && data.success) {
                             alert(data.message);
+                            this.showLeadModal = false;
                         } else {
                             alert(data.error || 'Gagal menambahkan calon customer.');
                         }
