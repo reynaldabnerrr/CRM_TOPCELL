@@ -263,12 +263,8 @@
                 window.location.href = '{{ route("chats.index") }}?room=' + roomId;
             };
 
-            const avatarChar = name ? name.charAt(0).toUpperCase() : 'W';
-            
             toast.innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center text-sm flex-shrink-0">
-                    ${avatarChar}
-                </div>
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-10 h-10 rounded-xl object-cover flex-shrink-0 bg-red-600 p-0.5 shadow-sm">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-slate-800 truncate">${name}</span>
