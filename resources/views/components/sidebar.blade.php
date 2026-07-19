@@ -223,8 +223,36 @@
         const badge = document.getElementById('sidebar-unread-badge');
         let lastRoomStates = {};
         let isInitialized = false;
+
+        function playNotificationSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.type = 'sine';
+                const now = audioCtx.currentTime;
+                oscillator.frequency.setValueAtTime(587.33, now); // D5
+                oscillator.frequency.exponentialRampToValueAtTime(880.00, now + 0.12); // A5
+                
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.2, now + 0.04);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.5);
+            } catch (e) {
+                // Fail silently due to autoplay restrictions
+            }
+        }
         
         function showToast(name, text, roomId) {
+            // Play dynamic ping notification sound
+            playNotificationSound();
+
             const container = document.getElementById('global-toast-container');
             if (!container) return;
 
