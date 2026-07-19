@@ -89,58 +89,72 @@
                     
                     <!-- Top Info Header -->
                     <template x-if="activeRoom">
-                        <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white flex-shrink-0 z-10">
-                            <div class="flex items-center space-x-3 min-w-0">
+                        <div class="p-3 sm:p-4 border-b border-gray-100 bg-white flex-shrink-0 z-10">
+                            <!-- Row 1: Back + Name/Phone + Action Buttons -->
+                            <div class="flex items-center gap-2">
                                 <!-- Back button for mobile/tablet -->
-                                <button @click="showConversationOnMobile = false" class="lg:hidden flex items-center text-gray-500 hover:text-gray-700 mr-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition">
+                                <button @click="showConversationOnMobile = false" class="lg:hidden flex-shrink-0 flex items-center justify-center text-gray-500 hover:text-gray-700 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                                     </svg>
                                 </button>
-                                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
+
+                                <!-- Avatar -->
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
                                     <span x-text="activeRoom.customer_name.charAt(0).toUpperCase()"></span>
                                 </div>
-                                <div class="min-w-0">
+
+                                <!-- Name & Phone -->
+                                <div class="flex-1 min-w-0">
                                     <h3 class="text-sm font-bold text-gray-900 truncate" x-text="activeRoom.customer_name"></h3>
-                                    <div class="flex items-center space-x-2 mt-0.5">
-                                        <span class="text-xs text-gray-500 font-medium" x-text="activeRoom.phone_number"></span>
-                                        <span class="text-gray-300">•</span>
-                                        <span class="text-xs text-green-600 font-semibold flex items-center">
+                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                        <span class="text-xs text-gray-500 font-medium truncate" x-text="activeRoom.phone_number"></span>
+                                        <span class="hidden sm:inline text-gray-300">•</span>
+                                        <span class="hidden sm:inline text-xs text-green-600 font-semibold flex items-center whitespace-nowrap">
                                             <span class="h-1.5 w-1.5 rounded-full bg-green-500 mr-1"></span>
                                             Sesi Aktif
                                         </span>
                                     </div>
                                 </div>
+
+                                <!-- Action Buttons (icon-only on xs, full on sm+) -->
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    <!-- Add to Calon Customer -->
+                                    <button 
+                                        @click="openLeadModal()" 
+                                        :disabled="addingLead"
+                                        title="Tambah Calon Customer"
+                                        class="inline-flex items-center justify-center px-2 py-1.5 sm:px-3 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 border border-indigo-100 rounded-lg text-xs font-semibold text-indigo-700 transition"
+                                    >
+                                        <svg class="h-3.5 w-3.5 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                        </svg>
+                                        <span class="hidden sm:inline" x-text="addingLead ? 'Memproses...' : 'Tambah Calon Customer'"></span>
+                                    </button>
+                                    
+                                    <!-- Delete Chat -->
+                                    <button 
+                                        @click="deleteChat()" 
+                                        :disabled="deletingChat"
+                                        title="Hapus Chat"
+                                        class="inline-flex items-center justify-center px-2 py-1.5 sm:px-3 bg-red-50 hover:bg-red-100 disabled:opacity-50 border border-red-100 rounded-lg text-xs font-semibold text-red-700 transition"
+                                    >
+                                        <svg class="h-3.5 w-3.5 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        <span class="hidden sm:inline" x-text="deletingChat ? 'Menghapus...' : 'Hapus Chat'"></span>
+                                    </button>
+                                </div>
                             </div>
-                            
-                            <!-- Action buttons -->
-                            <div class="flex items-center space-x-2 flex-shrink-0">
-                                <!-- Add to Calon Customer -->
-                                <button 
-                                    @click="openLeadModal()" 
-                                    :disabled="addingLead"
-                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 border border-indigo-100 rounded-lg text-xs font-semibold text-indigo-700 transition"
-                                >
-                                    <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                                    </svg>
-                                    <span x-text="addingLead ? 'Memproses...' : 'Tambah Calon Customer'"></span>
-                                </button>
-                                
-                                <!-- Delete Chat -->
-                                <button 
-                                    @click="deleteChat()" 
-                                    :disabled="deletingChat"
-                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 hover:bg-red-100 disabled:opacity-50 border border-red-100 rounded-lg text-xs font-semibold text-red-700 transition"
-                                >
-                                    <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    <span x-text="deletingChat ? 'Menghapus...' : 'Hapus Chat'"></span>
-                                </button>
+
+                            <!-- Row 2: Sesi Aktif badge (visible only on xs) -->
+                            <div class="sm:hidden mt-1.5 flex items-center gap-1.5 pl-1">
+                                <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                <span class="text-xs text-green-600 font-semibold">Sesi Aktif</span>
                             </div>
                         </div>
                     </template>
+
 
                     <!-- Message Body (Scroll area) -->
                     <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" x-ref="messageContainer">
