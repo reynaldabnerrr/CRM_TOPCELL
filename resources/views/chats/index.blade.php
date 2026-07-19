@@ -1,6 +1,44 @@
 <x-app-layout>
     <div class="-m-6">
         <style>
+            /* Prevent scrolling on the entire page/body for the chat page only */
+            html, body {
+                overflow: hidden !important;
+                height: 100% !important;
+                position: fixed !important;
+                width: 100% !important;
+            }
+            
+            /* Make the sidebar container non-scrollable and fit the viewport */
+            div.md\:ml-64 {
+                height: 100dvh !important;
+                min-height: 100dvh !important;
+                max-height: 100dvh !important;
+                overflow: hidden !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+
+            /* Target the main slot wrapper */
+            main.p-6 {
+                padding: 0 !important;
+                margin: 0 !important;
+                flex: 1 !important;
+                height: 100% !important;
+                min-height: 0 !important;
+                overflow: hidden !important;
+            }
+
+            /* Reset the negative margin wrapper */
+            .-m-6 {
+                margin: 0 !important;
+                height: 100% !important;
+                min-height: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                flex: 1 !important;
+            }
+
             /* Premium custom scrollbar styling */
             .custom-scrollbar::-webkit-scrollbar {
                 width: 6px;
@@ -26,7 +64,7 @@
             }
         </style>
 
-        <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white flex flex-col lg:flex-row" style="height: calc(100dvh - 3.5rem); min-height: 400px;">
+        <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white flex flex-col lg:flex-row w-full h-full">
             
             <!-- LEFT COLUMN: Room list -->
             <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-slate-100 flex-col flex-shrink-0 bg-slate-50/50">
@@ -686,6 +724,8 @@
                     await this.fetchMessages();
                     this.loadingMessages = false;
                     this.scrollToBottom();
+                    setTimeout(() => this.scrollToBottom(), 100);
+                    setTimeout(() => this.scrollToBottom(), 300);
 
                     // Set room unread count to 0 locally
                     const localRoom = this.rooms.find(r => r.id === room.id);
@@ -715,6 +755,7 @@
                             // Auto scroll to bottom only if there are new messages
                             if (this.messages.length > oldLength) {
                                 this.scrollToBottom();
+                                setTimeout(() => this.scrollToBottom(), 100);
                             }
                         }
                     } catch (err) {
