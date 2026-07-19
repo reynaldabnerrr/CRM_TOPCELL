@@ -336,6 +336,12 @@ class QontakService
             $payload = [
                 'room_id' => $roomId,
                 'type'    => 'image',
+                'file'    => [
+                    'url' => $text,
+                ],
+                'image'   => [
+                    'url' => $text,
+                ],
                 'message' => [
                     'image_url' => $text,
                     'caption'   => '',
