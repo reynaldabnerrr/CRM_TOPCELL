@@ -1,22 +1,6 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('WhatsApp Live Chat') }}
-            </h2>
-            <div class="flex items-center space-x-2 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                </span>
-                <span>Real-time Sync Active</span>
-            </div>
-        </div>
-    </x-slot>
-
-    <div class="py-0 sm:py-4">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white sm:rounded-2xl shadow-xl border-y sm:border border-gray-100 overflow-hidden flex flex-col lg:flex-row" style="height: calc(100dvh - 7rem); min-height: 400px;">
+    <div class="-m-6">
+        <div>
+            <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white flex flex-col lg:flex-row" style="height: calc(100dvh - 3.5rem); min-height: 400px;">
                 
                 <!-- LEFT COLUMN: Room list -->
                 <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-gray-100 flex-col flex-shrink-0 bg-gray-50/50">
