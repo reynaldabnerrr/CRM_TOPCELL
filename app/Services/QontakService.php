@@ -366,45 +366,33 @@ class QontakService
             ];
         }
 
-        if ($messageType === 'image') {
-            // Upload file to Qontak servers first to get a hosted URL
-            $imageUrl = $text; // fallback to our URL
-            if ($localFilePath && file_exists($localFilePath)) {
-                $uploadResult = $this->uploadFileToQontak($localFilePath, $accessToken, $baseUrl);
-                if ($uploadResult['success'] && !empty($uploadResult['url'])) {
-                    $imageUrl = $uploadResult['url'];
-                    Log::info('Qontak: File uploaded successfully, using Qontak URL: ' . $imageUrl);
-                } else {
-                    Log::warning('Qontak: File upload failed, falling back to local URL. Error: ' . ($uploadResult['error'] ?? 'unknown'));
-                }
-            }
-
-            $payload = [
-                'room_id'  => $roomId,
-                'type'     => 'image',
-                'file_url' => $imageUrl,
-            ];
-        } else {
-            $payload = [
-                'room_id' => $roomId,
-                'type'    => 'text',
-                'text'    => $text,
-            ];
-        }
-
         try {
-            Log::info('Replying WhatsApp via Qontak:', [
-                'url'     => $url,
-                'room_id' => $roomId,
-                'payload' => $payload,
-            ]);
+            Log::info("Replying WhatsApp via Qontak (type: {$messageType}) to Room {$roomId}");
 
-            $response = Http::withToken($accessToken)
+            $request = Http::withToken($accessToken)
                 ->withHeaders([
                     'Connection' => 'close',
                 ])
-                ->timeout(30)
-                ->post($url, $payload);
+                ->timeout(30);
+
+            if ($messageType === 'image' && $localFilePath && file_exists($localFilePath)) {
+                $response = $request->attach('file', file_get_contents($localFilePath), basename($localFilePath))
+                    ->post($url, [
+                        'room_id' => $roomId,
+                        'type'    => 'image'
+                    ]);
+            } else {
+                $payload = [
+                    'room_id' => $roomId,
+                    'type'    => $messageType === 'image' ? 'image' : 'text',
+                ];
+                if ($messageType === 'image') {
+                    $payload['file_url'] = $text; // fallback
+                } else {
+                    $payload['text'] = $text;
+                }
+                $response = $request->post($url, $payload);
+            }
 
             Log::info('Qontak Reply API Response Status: ' . $response->status());
 
@@ -420,7 +408,7 @@ class QontakService
                 
                 if ($refreshResult['success']) {
                     Log::info('Token refresh succeeded. Retrying WhatsApp reply...');
-                    return $this->sendWhatsappReply($roomId, $text, $messageType, true);
+                    return $this->sendWhatsappReply($roomId, $text, $messageType, true, $localFilePath);
                 }
             }
 
