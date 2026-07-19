@@ -123,4 +123,19 @@ Route::middleware('auth')->group(function () {
 // Qontak Webhook (Public)
 Route::post('/qontak/webhook', [\App\Http\Controllers\QontakWebhookController::class, 'handleWebhook'])->name('qontak.webhook');
 
+// Public route to serve chat attachment files (avoids storage symlink requirement)
+Route::get('/attachments/{filename}', function (string $filename) {
+    // Sanitize filename to prevent path traversal
+    $filename = basename($filename);
+    $path = storage_path('app/public/attachments/' . $filename);
+
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+    return response()->file($path, ['Content-Type' => $mimeType]);
+})->name('attachments.serve');
+
+
 require __DIR__.'/auth.php';

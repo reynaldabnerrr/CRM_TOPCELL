@@ -69,7 +69,9 @@ class ChatController extends Controller
 
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store('attachments', 'public');
-            $content = asset('storage/' . $path);
+            $filename = basename($path);
+            // Use dedicated Laravel route instead of storage symlink URL
+            $content = url('/attachments/' . $filename);
             $messageType = 'image';
         } else {
             $content = $request->input('message');
