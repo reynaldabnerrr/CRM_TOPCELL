@@ -19,7 +19,7 @@
             <div x-data="chatSystem({{ json_encode($chats) }})" class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col md:flex-row h-[calc(100vh-14rem)] min-h-[500px]">
                 
                 <!-- LEFT COLUMN: Room list -->
-                <div class="w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col flex-shrink-0 bg-gray-50/50">
+                <div :class="showConversationOnMobile ? 'hidden md:flex' : 'flex'" class="w-full md:w-80 lg:w-96 border-r border-gray-100 flex-col flex-shrink-0 bg-gray-50/50">
                     <!-- Search input -->
                     <div class="p-4 border-b border-gray-100 bg-white">
                         <label for="search" class="sr-only">Cari customer</label>
@@ -85,12 +85,18 @@
                 </div>
 
                 <!-- RIGHT COLUMN: Active conversation -->
-                <div class="flex-1 flex flex-col min-w-0 bg-white relative">
+                <div :class="showConversationOnMobile ? 'flex' : 'hidden md:flex'" class="flex-1 flex-col min-w-0 bg-white relative">
                     
                     <!-- Top Info Header -->
                     <template x-if="activeRoom">
                         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white flex-shrink-0 z-10">
                             <div class="flex items-center space-x-3 min-w-0">
+                                <!-- Back button for mobile -->
+                                <button @click="showConversationOnMobile = false" class="md:hidden flex items-center text-gray-500 hover:text-gray-700 mr-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
                                 <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
                                     <span x-text="activeRoom.customer_name.charAt(0).toUpperCase()"></span>
                                 </div>
@@ -247,6 +253,7 @@
                 errorMessage: '',
                 pollingInterval: null,
                 messagesPollingInterval: null,
+                showConversationOnMobile: false,
 
                 init() {
                     // Poll for rooms list updates every 4 seconds
@@ -286,6 +293,7 @@
 
                 async selectRoom(room) {
                     this.activeRoom = room;
+                    this.showConversationOnMobile = true;
                     this.loadingMessages = true;
                     this.errorMessage = '';
                     this.messages = [];
