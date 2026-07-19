@@ -1,4 +1,4 @@
-<div x-data="{ sidebarOpen: false }" class="relative">
+<div x-data="{ sidebarOpen: false }" class="relative" @open-sidebar.window="sidebarOpen = true">
 
     <!-- Mobile overlay -->
     <div

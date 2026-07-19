@@ -8,9 +8,15 @@
                 position: fixed !important;
                 width: 100% !important;
             }
+
+            /* Hide global mobile top bar on chat page */
+            .md\:hidden.fixed.top-0.left-0.right-0.h-14 {
+                display: none !important;
+            }
             
-            /* Make the sidebar container non-scrollable and fit the viewport */
+            /* Make the sidebar container non-scrollable and fit the viewport, removing top padding on mobile */
             div.md\:ml-64 {
+                padding-top: 0 !important;
                 height: 100dvh !important;
                 min-height: 100dvh !important;
                 max-height: 100dvh !important;
@@ -70,11 +76,17 @@
             <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-slate-100 flex-col flex-shrink-0 bg-slate-50/50 h-full max-h-full overflow-hidden">
                 <!-- Sidebar Header -->
                 <div class="px-5 py-4 border-b border-slate-100 bg-white flex items-center justify-between">
-                    <div class="flex items-center space-x-2.5">
-                        <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                        <h2 class="text-base font-bold text-slate-800 tracking-tight">WhatsApp Live Chat</h2>
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        <!-- Hamburger menu to open sidebar on mobile -->
+                        <button @click="window.dispatchEvent(new CustomEvent('open-sidebar'))" class="lg:hidden p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg mr-1 transition flex-shrink-0" title="Buka Menu">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                        <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0"></div>
+                        <h2 class="text-base font-bold text-slate-800 tracking-tight truncate">WhatsApp Live Chat</h2>
                     </div>
-                    <span class="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2 py-0.5 rounded-full" x-text="rooms.length + ' Chat'"></span>
+                    <span class="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ml-2" x-text="rooms.length + ' Chat'"></span>
                 </div>
 
                 <!-- Search input -->
@@ -221,7 +233,7 @@
                 </template>
 
                 <!-- Message Body (Scroll area) -->
-                <div class="flex-1 overflow-y-auto p-4 space-y-4 chat-bg-pattern custom-scrollbar" x-ref="messageContainer">
+                <div class="flex-1 overflow-y-auto p-4 space-y-4 chat-bg-pattern custom-scrollbar" x-ref="messageContainer" @scroll="handleScroll">
                     
                     <!-- Empty State (No Active Room) -->
                     <template x-if="!activeRoom">
@@ -372,7 +384,7 @@
                                     placeholder="Ketik balasan pesan..."
                                     rows="1"
                                     @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
-                                    class="flex-1 py-1.5 px-3 bg-transparent border-0 focus:ring-0 focus:outline-none text-sm resize-none text-slate-700 min-h-[36px] max-h-[120px] custom-scrollbar leading-relaxed"
+                                    class="flex-1 py-1.5 px-3 bg-transparent border-0 focus:ring-0 focus:outline-none text-base lg:text-sm resize-none text-slate-700 min-h-[36px] max-h-[120px] custom-scrollbar leading-relaxed"
                                     :disabled="sending"
                                 ></textarea>
                             </div>
@@ -402,6 +414,24 @@
                     </div>
                 </template>
 
+                <!-- Floating Scroll to Bottom Button -->
+                <div 
+                    x-show="showScrollBottomButton" 
+                    x-transition 
+                    class="absolute bottom-20 right-6 z-10"
+                    style="display: none;"
+                >
+                    <button 
+                        type="button"
+                        @click="scrollToBottom()" 
+                        class="flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-200/60 text-slate-500 hover:text-slate-700 shadow-lg hover:bg-slate-50 transition active:scale-95"
+                        title="Scroll ke Bawah"
+                    >
+                        <svg class="h-5 w-5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7m14-6l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <!-- Lead Modal Overlay -->
@@ -650,6 +680,9 @@
                 selectedFile: null,
                 selectedFilePreview: null,
 
+                // Floating scroll bottom button state
+                showScrollBottomButton: false,
+
                 init() {
                     // Poll for rooms list updates every 4 seconds
                     this.pollingInterval = setInterval(() => {
@@ -814,12 +847,18 @@
                 },
 
                 scrollToBottom() {
+                    this.showScrollBottomButton = false;
                     this.$nextTick(() => {
                         const container = this.$refs.messageContainer;
                         if (container) {
                             container.scrollTop = container.scrollHeight;
                         }
                     });
+                },
+
+                handleScroll(e) {
+                    const container = e.target;
+                    this.showScrollBottomButton = container.scrollHeight - container.scrollTop - container.clientHeight > 300;
                 },
 
                 formatTime(dateString) {
@@ -834,7 +873,7 @@
                     return date.toLocaleDateString([], { day: '2-digit', month: 'short' }) + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                 },
 
-                // Secure WhatsApp markdown parser
+                // Secure WhatsApp markdown parser with Linkify
                 formatMessageContent(content) {
                     if (!content) return '';
                     // Escape HTML first to prevent XSS
@@ -842,6 +881,10 @@
                         .replace(/&/g, "&amp;")
                         .replace(/</g, "&lt;")
                         .replace(/>/g, "&gt;");
+                    
+                    // Linkify URLs: https://google.com -> clickable link
+                    const urlRegex = /(https?:\/\/[^\s]+)/g;
+                    escaped = escaped.replace(urlRegex, '<a href="$1" target="_blank" class="underline text-indigo-650 hover:text-indigo-800 break-all font-semibold">$1</a>');
                     
                     // Bold: *text* -> <strong>text</strong>
                     escaped = escaped.replace(/\*([^\*]+)\*/g, '<strong>$1</strong>');
