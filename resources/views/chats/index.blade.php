@@ -148,7 +148,7 @@
                                     <h4 class="text-sm font-bold truncate text-slate-800" x-text="room.customer_name"></h4>
                                     <span class="text-[10px] font-medium flex-shrink-0 ml-2 text-slate-400" x-text="formatTime(room.last_message_time)"></span>
                                 </div>
-                                <p class="text-xs font-semibold text-indigo-600/80 mt-0.5" x-text="room.phone_number"></p>
+                                <p class="text-xs font-semibold text-indigo-600/80 mt-0.5" x-text="formatDisplayNumber(room.phone_number)"></p>
                                 <p class="text-xs text-slate-400 truncate mt-1 flex items-center" :class="activeRoom && activeRoom.id === room.id ? 'text-slate-500 font-medium' : ''">
                                     <template x-if="room.last_message && room.last_message.includes('[Gambar]')">
                                         <svg class="h-3.5 w-3.5 text-slate-400 mr-1 inline-block flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -191,7 +191,7 @@
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-sm sm:text-base font-bold text-slate-800 truncate" x-text="activeRoom.customer_name"></h3>
                                 <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                    <span class="text-xs text-indigo-600 font-semibold flex-shrink-0" x-text="activeRoom.phone_number"></span>
+                                    <span class="text-xs text-indigo-600 font-semibold flex-shrink-0" x-text="formatDisplayNumber(activeRoom.phone_number)"></span>
                                     <span class="hidden sm:inline text-slate-300 flex-shrink-0">•</span>
                                     <span class="hidden sm:inline-flex text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100/50 font-bold px-2 py-0.5 rounded-full items-center whitespace-nowrap flex-shrink-0">
                                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse"></span>
@@ -873,7 +873,36 @@
                     return date.toLocaleDateString([], { day: '2-digit', month: 'short' }) + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                 },
 
-                // Secure WhatsApp markdown parser with Linkify
+                formatDisplayNumber(phone) {
+                    if (!phone) return '';
+                    const clean = phone.replace(/[^0-9]/g, '');
+                    if (clean.length > 14) {
+                        return 'Instagram/FB Chat';
+                    }
+                    if (clean.startsWith('62')) {
+                        const parts = [];
+                        parts.push('+' + clean.substring(0, 2));
+                        let rest = clean.substring(2);
+                        while (rest.length > 0) {
+                            parts.push(rest.substring(0, 4));
+                            rest = rest.substring(4);
+                        }
+                        return parts.join(' ');
+                    }
+                    if (clean.startsWith('0')) {
+                        const parts = [];
+                        parts.push(clean.substring(0, 4));
+                        let rest = clean.substring(4);
+                        while (rest.length > 0) {
+                            parts.push(rest.substring(0, 4));
+                            rest = rest.substring(4);
+                        }
+                        return parts.join('-');
+                    }
+                    return phone;
+                },
+
+                // Secure WhatsApp markdown parser with Safe URL Linkify Tokenization
                 formatMessageContent(content) {
                     if (!content) return '';
                     // Escape HTML first to prevent XSS
@@ -882,10 +911,15 @@
                         .replace(/</g, "&lt;")
                         .replace(/>/g, "&gt;");
                     
-                    // Linkify URLs: https://google.com -> clickable link
+                    // 1. Extract URLs to unique non-special placeholders to avoid markdown/HTML clash
+                    const urls = [];
                     const urlRegex = /(https?:\/\/[^\s]+)/g;
-                    escaped = escaped.replace(urlRegex, '<a href="$1" target="_blank" class="underline text-indigo-650 hover:text-indigo-800 break-all font-semibold">$1</a>');
+                    escaped = escaped.replace(urlRegex, (match) => {
+                        urls.push(match);
+                        return 'URLPLCHLDR' + (urls.length - 1);
+                    });
                     
+                    // 2. Apply Markdown parsing on plain text
                     // Bold: *text* -> <strong>text</strong>
                     escaped = escaped.replace(/\*([^\*]+)\*/g, '<strong>$1</strong>');
                     
@@ -897,6 +931,13 @@
                     
                     // Code block: `text` -> <code>text</code>
                     escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-slate-100 text-red-650 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>');
+                    
+                    // 3. Re-inject URLs as safe anchor tags
+                    for (let i = 0; i < urls.length; i++) {
+                        const url = urls[i];
+                        const linkHtml = `<a href="${url}" target="_blank" class="underline text-indigo-600 hover:text-indigo-800 break-all font-semibold">${url}</a>`;
+                        escaped = escaped.replace('URLPLCHLDR' + i, linkHtml);
+                    }
                     
                     return escaped;
                 },
