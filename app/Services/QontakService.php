@@ -382,16 +382,10 @@ class QontakService
             $payload = [
                 'room_id' => $roomId,
                 'type'    => 'image',
-                'file'    => [
-                    'url' => $imageUrl,
-                ],
                 'image'   => [
-                    'url' => $imageUrl,
+                    'url'     => $imageUrl,
+                    'caption' => '',
                 ],
-                'message' => [
-                    'image_url' => $imageUrl,
-                    'caption'   => '',
-                ]
             ];
         } else {
             $payload = [
