@@ -64,11 +64,11 @@
                 </svg>
                 <span>WhatsApp Chat</span>
             </div>
-            @if($unreadChatsCount > 0)
-                <span class="bg-red-500 text-white px-2 py-0.5 rounded-full text-xxs font-extrabold animate-pulse">
-                    {{ $unreadChatsCount }}
-                </span>
-            @endif
+            <span id="sidebar-unread-badge" 
+                class="bg-red-500 text-white px-2 py-0.5 rounded-full text-xxs font-extrabold animate-pulse" 
+                style="{{ $unreadChatsCount > 0 ? '' : 'display: none;' }}">
+                {{ $unreadChatsCount }}
+            </span>
         </a>
 
         <!-- Sales Menu -->
@@ -197,3 +197,39 @@
     </div>
 
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const badge = document.getElementById('sidebar-unread-badge');
+        
+        async function updateSidebarBadge() {
+            try {
+                const res = await fetch('{{ route("chats.rooms") }}');
+                if (res.ok) {
+                    const rooms = await res.json();
+                    const totalUnread = rooms.reduce((sum, room) => sum + parseInt(room.unread_count || 0), 0);
+                    
+                    if (badge) {
+                        if (totalUnread > 0) {
+                            badge.textContent = totalUnread;
+                            badge.style.display = '';
+                            
+                            // Also update menu badge text if on chats view but page isn't active
+                            const menuBadge = document.querySelector('.chats-badge');
+                            if (menuBadge) {
+                                menuBadge.textContent = totalUnread;
+                            }
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                }
+            } catch (err) {
+                // Fail silently to avoid console noise
+            }
+        }
+
+        // Poll every 5 seconds
+        setInterval(updateSidebarBadge, 5000);
+    });
+</script>
