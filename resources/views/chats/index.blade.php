@@ -14,9 +14,9 @@
         </div>
     </x-slot>
 
-    <div class="py-4">
+    <div class="py-0 sm:py-4">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col lg:flex-row h-[calc(100vh-14rem)] min-h-[500px]">
+            <div x-data="chatSystem({{ json_encode($chats) }}, {{ json_encode($statuses) }})" class="bg-white sm:rounded-2xl shadow-xl border-y sm:border border-gray-100 overflow-hidden flex flex-col lg:flex-row" style="height: calc(100dvh - 7rem); min-height: 400px;">
                 
                 <!-- LEFT COLUMN: Room list -->
                 <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-gray-100 flex-col flex-shrink-0 bg-gray-50/50">
@@ -253,7 +253,7 @@
 
                     <!-- Input Bar (Fixed Bottom) -->
                     <template x-if="activeRoom">
-                        <div class="p-4 border-t border-gray-100 bg-white flex-shrink-0 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+                        <div class="p-2 sm:p-4 border-t border-gray-100 bg-white flex-shrink-0 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
                             <!-- Hidden inputs for media upload and camera capture -->
                             <input type="file" id="chat-file-input" @change="uploadFile" accept="image/*" class="hidden">
                             <input type="file" id="chat-camera-input" @change="uploadFile" accept="image/*" capture="environment" class="hidden">
@@ -263,7 +263,9 @@
                                         x-model="newMessage"
                                         @keydown.enter.prevent="if (!sending && newMessage.trim()) sendReply()"
                                         placeholder="Ketik balasan pesan..."
-                                        rows="2"
+                                        rows="1"
+                                        @focus="$el.rows=2"
+                                        @blur="if(!newMessage.trim()) $el.rows=1"
                                         class="w-full py-2.5 pl-4 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm resize-none bg-gray-50/50 focus:bg-white transition-all"
                                         :disabled="sending"
                                     ></textarea>
