@@ -320,7 +320,8 @@
                 async fetchMessages(isSilent = false) {
                     if (!this.activeRoom) return;
                     try {
-                        const res = await fetch(`/chats/${this.activeRoom.id}/messages`);
+                        const url = '{{ route("chats.messages", ":id") }}'.replace(':id', this.activeRoom.id);
+                        const res = await fetch(url);
                         if (res.ok) {
                             const data = await res.json();
                             const oldLength = this.messages.length;
@@ -350,7 +351,8 @@
                     this.newMessage = ''; // Optimistic clear
 
                     try {
-                        const res = await fetch(`/chats/${this.activeRoom.id}/send`, {
+                        const url = '{{ route("chats.send", ":id") }}'.replace(':id', this.activeRoom.id);
+                        const res = await fetch(url, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
