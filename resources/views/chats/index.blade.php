@@ -16,10 +16,10 @@
 
     <div class="py-4">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div x-data="chatSystem({{ json_encode($chats) }})" class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col md:flex-row h-[calc(100vh-14rem)] min-h-[500px]">
+            <div x-data="chatSystem({{ json_encode($chats) }})" class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col lg:flex-row h-[calc(100vh-14rem)] min-h-[500px]">
                 
                 <!-- LEFT COLUMN: Room list -->
-                <div :class="showConversationOnMobile ? 'hidden md:flex' : 'flex'" class="w-full md:w-80 lg:w-96 border-r border-gray-100 flex-col flex-shrink-0 bg-gray-50/50">
+                <div :class="showConversationOnMobile ? 'hidden lg:flex' : 'flex'" class="w-full lg:w-80 xl:w-96 border-r border-gray-100 flex-col flex-shrink-0 bg-gray-50/50">
                     <!-- Search input -->
                     <div class="p-4 border-b border-gray-100 bg-white">
                         <label for="search" class="sr-only">Cari customer</label>
@@ -85,14 +85,14 @@
                 </div>
 
                 <!-- RIGHT COLUMN: Active conversation -->
-                <div :class="showConversationOnMobile ? 'flex' : 'hidden md:flex'" class="flex-1 flex-col min-w-0 bg-white relative">
+                <div :class="showConversationOnMobile ? 'flex' : 'hidden lg:flex'" class="flex-1 flex-col min-w-0 bg-white relative">
                     
                     <!-- Top Info Header -->
                     <template x-if="activeRoom">
                         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-white flex-shrink-0 z-10">
                             <div class="flex items-center space-x-3 min-w-0">
-                                <!-- Back button for mobile -->
-                                <button @click="showConversationOnMobile = false" class="md:hidden flex items-center text-gray-500 hover:text-gray-700 mr-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition">
+                                <!-- Back button for mobile/tablet -->
+                                <button @click="showConversationOnMobile = false" class="lg:hidden flex items-center text-gray-500 hover:text-gray-700 mr-2 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                                     </svg>
