@@ -252,11 +252,14 @@ class QontakService
         try {
             Log::info('Refreshing Qontak Access Token...');
 
+            $clientId = $settings->client_id ?: self::CLIENT_ID;
+            $clientSecret = $settings->client_secret ?: self::CLIENT_SECRET;
+
             $response = Http::timeout(15)->post($url, [
                 'refresh_token' => $refreshToken,
                 'grant_type'    => 'refresh_token',
-                'client_id'     => self::CLIENT_ID,
-                'client_secret' => self::CLIENT_SECRET,
+                'client_id'     => $clientId,
+                'client_secret' => $clientSecret,
             ]);
 
             Log::info('Qontak Token Refresh Status: ' . $response->status());
@@ -301,6 +304,93 @@ class QontakService
             return [
                 'success' => false,
                 'error'   => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Send WhatsApp text message to a customer within active session window (reply)
+     *
+     * @param string $roomId WhatsApp room ID (obtained from Webhook)
+     * @param string $text Message content
+     * @param bool $isRetry Internal flag to avoid infinite recursion
+     * @return array [ 'success' => bool, 'response' => array|string|null, 'error' => string|null ]
+     */
+    public function sendWhatsappReply(string $roomId, string $text, bool $isRetry = false): array
+    {
+        $settings = $this->getSettings();
+        
+        $baseUrl = rtrim($settings->base_url, '/');
+        $url = $baseUrl . '/api/open/v1/messages/whatsapp/bot';
+        $accessToken = $settings->chatbot_token ?: $settings->access_token;
+
+        if (empty($accessToken)) {
+            return [
+                'success'  => false,
+                'response' => null,
+                'error'    => 'Access Token Qontak kosong. Silakan konfigurasikan di halaman Pengaturan Qontak.',
+            ];
+        }
+
+        $payload = [
+            'room_id' => $roomId,
+            'type'    => 'text',
+            'text'    => $text,
+        ];
+
+        try {
+            Log::info('Replying WhatsApp via Qontak:', [
+                'url'     => $url,
+                'room_id' => $roomId,
+            ]);
+
+            $response = Http::withToken($accessToken)
+                ->withHeaders([
+                    'Connection' => 'close',
+                ])
+                ->timeout(30)
+                ->post($url, $payload);
+
+            Log::info('Qontak Reply API Response Status: ' . $response->status());
+
+            // Handle token expiration (401 Unauthorized)
+            if ($response->status() === 401 && !$isRetry) {
+                Log::warning('Qontak Reply API unauthorized (401). Attempting to auto-refresh token...');
+                
+                $refreshResult = $this->refreshToken();
+                
+                if ($refreshResult['success']) {
+                    Log::info('Token refresh succeeded. Retrying WhatsApp reply...');
+                    return $this->sendWhatsappReply($roomId, $text, true);
+                }
+            }
+
+            if ($response->successful()) {
+                return [
+                    'success'  => true,
+                    'response' => $response->json(),
+                    'error'    => null,
+                ];
+            }
+
+            $errorData = $response->json();
+            $errorMessage = $errorData['error']['messages'][0] 
+                ?? $errorData['message'] 
+                ?? "API HTTP error: {$response->status()}";
+
+            return [
+                'success'  => false,
+                'response' => $errorData,
+                'error'    => $errorMessage,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Exception replying Qontak WA message: ' . $e->getMessage());
+
+            return [
+                'success'  => false,
+                'response' => null,
+                'error'    => $e->getMessage(),
             ];
         }
     }

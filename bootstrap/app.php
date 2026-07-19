@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'followup.access' => \App\Http\Middleware\CheckFollowupAccess::class,
             'aftercare.access' => \App\Http\Middleware\CheckAftercareAccess::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            '/qontak/webhook'
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -14,7 +14,10 @@ class QontakSetting extends Model
     protected $fillable = [
         'base_url',
         'access_token',
+        'chatbot_token',
         'refresh_token',
+        'client_id',
+        'client_secret',
         'channel_integration_id',
         'sales_template_h1',
         'sales_template_h7',

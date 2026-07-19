@@ -106,7 +106,19 @@ Route::middleware('auth')->group(function () {
         Route::patch('/', [\App\Http\Controllers\QontakSettingsController::class, 'update'])->name('update');
         Route::post('/test-refresh', [\App\Http\Controllers\QontakSettingsController::class, 'testRefresh'])->name('test-refresh');
         Route::get('/templates', [\App\Http\Controllers\QontakSettingsController::class, 'showTemplates'])->name('templates');
+        Route::post('/register-webhook', [\App\Http\Controllers\QontakSettingsController::class, 'registerWebhook'])->name('register-webhook');
+    });
+
+    // Chat WhatsApp Routes
+    Route::prefix('chats')->name('chats.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ChatController::class, 'index'])->name('index');
+        Route::get('/rooms', [\App\Http\Controllers\ChatController::class, 'getRooms'])->name('rooms');
+        Route::get('/{chat}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('messages');
+        Route::post('/{chat}/send', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
     });
 });
+
+// Qontak Webhook (Public)
+Route::post('/qontak/webhook', [\App\Http\Controllers\QontakWebhookController::class, 'handleWebhook'])->name('qontak.webhook');
 
 require __DIR__.'/auth.php';

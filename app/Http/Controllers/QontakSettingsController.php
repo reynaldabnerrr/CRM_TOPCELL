@@ -37,7 +37,10 @@ class QontakSettingsController extends Controller
         $request->validate([
             'base_url'                     => 'required|url',
             'access_token'                 => 'nullable|string',
+            'chatbot_token'                => 'nullable|string',
             'refresh_token'                => 'nullable|string',
+            'client_id'                    => 'nullable|string',
+            'client_secret'                => 'nullable|string',
             'channel_integration_id'       => 'nullable|string',
             'sales_template_h1'            => 'nullable|string',
             'sales_template_h1_vars'       => 'nullable|integer|min:1|max:3',
@@ -60,7 +63,10 @@ class QontakSettingsController extends Controller
         $settings->fill($request->only([
             'base_url',
             'access_token',
+            'chatbot_token',
             'refresh_token',
+            'client_id',
+            'client_secret',
             'channel_integration_id',
             'sales_template_h1',
             'sales_template_h7',
@@ -230,6 +236,96 @@ class QontakSettingsController extends Controller
             return redirect()
                 ->route('qontak-settings.edit')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Dynamically register/update the Webhook URL in Qontak using the saved credentials.
+     */
+    public function registerWebhook()
+    {
+        $settings = QontakSetting::getSettings();
+        
+        if (empty($settings->access_token)) {
+            return redirect()
+                ->route('qontak-settings.edit')
+                ->with('error', 'Access Token Qontak kosong. Silakan isi terlebih dahulu.');
+        }
+
+        // Detect dynamic webhook endpoint URL
+        $webhookUrl = rtrim(request()->getSchemeAndHttpHost(), '/') . '/qontak/webhook';
+        $baseUrl = rtrim($settings->base_url, '/');
+        
+        // Dynamically choose endpoint path
+        if (str_contains($baseUrl, 'api.mekari.com')) {
+            $url = $baseUrl . '/qontak/chat/v1/message_interactions';
+        } else {
+            $url = $baseUrl . '/api/open/v1/message_interactions';
+        }
+
+        Log::info("Webhook Registration: Attempting to register {$webhookUrl} via Qontak API");
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withToken($settings->access_token)
+                ->timeout(20)
+                ->put($url, [
+                    'url' => $webhookUrl,
+                    'receive_message_from_customer' => true,
+                    'receive_message_from_agent' => true,
+                    'status_message' => true,
+                    'broadcast_log_status' => true
+                ]);
+
+            Log::info("Webhook Registration: Qontak API Response Status: " . $response->status());
+
+            if ($response->successful()) {
+                return redirect()
+                    ->route('qontak-settings.edit')
+                    ->with('success', 'Webhook Qontak berhasil didaftarkan: ' . $webhookUrl);
+            }
+
+            // Retry once if token refresh helps (in case it is expired)
+            if ($response->status() === 401) {
+                Log::warning('Unauthorized while registering webhook. Attempting token refresh...');
+                $qontakService = new \App\Services\QontakService();
+                $refreshResult = $qontakService->refreshToken();
+                
+                if ($refreshResult['success']) {
+                    Log::info('Token refresh succeeded. Retrying webhook registration...');
+                    $newSettings = QontakSetting::getSettings();
+                    
+                    $response = \Illuminate\Support\Facades\Http::withToken($newSettings->access_token)
+                        ->timeout(20)
+                        ->put($url, [
+                            'url' => $webhookUrl,
+                            'receive_message_from_customer' => true,
+                            'receive_message_from_agent' => true,
+                            'status_message' => true,
+                            'broadcast_log_status' => true
+                        ]);
+
+                    if ($response->successful()) {
+                        return redirect()
+                            ->route('qontak-settings.edit')
+                            ->with('success', 'Webhook Qontak berhasil didaftarkan setelah refresh token: ' . $webhookUrl);
+                    }
+                }
+            }
+
+            $errorData = $response->json();
+            $errorMsg = $errorData['error']['messages'][0] 
+                ?? $errorData['message'] 
+                ?? "HTTP Error {$response->status()}";
+
+            return redirect()
+                ->route('qontak-settings.edit')
+                ->with('error', 'Gagal mendaftarkan webhook di Qontak: ' . $errorMsg);
+
+        } catch (\Exception $e) {
+            Log::error('Exception registering Qontak webhook: ' . $e->getMessage());
+            return redirect()
+                ->route('qontak-settings.edit')
+                ->with('error', 'Terjadi kesalahan saat mendaftarkan webhook: ' . $e->getMessage());
         }
     }
 }

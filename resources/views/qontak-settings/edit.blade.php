@@ -75,6 +75,28 @@
                                     <p class="text-xs text-gray-400 mt-1">Ditemukan di dashboard Qontak (Settings > Integrations > Channel Integration ID)</p>
                                 </div>
 
+                                <div>
+                                    <label for="client_id" class="block text-sm font-semibold text-gray-700 mb-1">
+                                        Client ID
+                                    </label>
+                                    <input type="text" name="client_id" id="client_id" 
+                                        value="{{ old('client_id', $settings->client_id) }}"
+                                        placeholder="Masukkan Client ID Qontak"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    <p class="text-xs text-gray-400 mt-1">Digunakan untuk memperbarui (refresh) token otomatis</p>
+                                </div>
+
+                                <div>
+                                    <label for="client_secret" class="block text-sm font-semibold text-gray-700 mb-1">
+                                        Client Secret
+                                    </label>
+                                    <input type="text" name="client_secret" id="client_secret" 
+                                        value="{{ old('client_secret', $settings->client_secret) }}"
+                                        placeholder="Masukkan Client Secret Qontak"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    <p class="text-xs text-gray-400 mt-1">Digunakan untuk memperbarui (refresh) token otomatis</p>
+                                </div>
+
                                 <div class="md:col-span-2">
                                     <label for="access_token" class="block text-sm font-semibold text-gray-700 mb-1">
                                         Access Token
@@ -82,6 +104,16 @@
                                     <textarea name="access_token" id="access_token" rows="2"
                                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
                                         placeholder="Masukkan token akses saat ini">{{ old('access_token', $settings->access_token) }}</textarea>
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label for="chatbot_token" class="block text-sm font-semibold text-gray-700 mb-1">
+                                        Chatbot API Token (Opsional)
+                                    </label>
+                                    <textarea name="chatbot_token" id="chatbot_token" rows="2"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
+                                        placeholder="Masukkan token chatbot (dari menu API Token > Chatbot di Qontak)">{{ old('chatbot_token', $settings->chatbot_token) }}</textarea>
+                                    <p class="text-xs text-gray-400 mt-1">Gunakan token dari tab **Chatbot** jika ingin membalas pesan obrolan secara interaktif. Jika dikosongkan, akan menggunakan Access Token utama di atas.</p>
                                 </div>
 
                                 <div class="md:col-span-2">
@@ -468,10 +500,22 @@
                         </div>
 
                         <!-- Form Actions -->
-                        <div class="flex items-center justify-end gap-3 border-t pt-6">
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                💾 Simpan Konfigurasi
-                            </button>
+                        <div class="flex items-center justify-between border-t pt-6">
+                            <div>
+                                @if($settings->access_token)
+                                    <form method="POST" action="{{ route('qontak-settings.register-webhook') }}" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin mendaftarkan URL aplikasi saat ini sebagai webhook di Mekari Qontak?')">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs uppercase tracking-widest transition ease-in-out duration-150 shadow-sm">
+                                            🔗 Hubungkan Webhook Qontak
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    💾 Simpan Konfigurasi
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
