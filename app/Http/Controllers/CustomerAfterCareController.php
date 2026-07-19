@@ -214,6 +214,10 @@ class CustomerAfterCareController extends Controller
      */
     public function broadcastAll(Request $request)
     {
+        // Bypass PHP execution time limits to prevent timeout on long synchronous loops
+        set_time_limit(0);
+        ini_set('max_execution_time', 0);
+
         $type = $request->input('type', 'all');
         $referenceDate = $request->input('date') ? Carbon::parse($request->input('date')) : Carbon::now();
 
