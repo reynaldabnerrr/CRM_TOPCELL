@@ -86,14 +86,6 @@ class QontakWebhookController extends Controller
             ?? $payload['sender']['phone'] 
             ?? null;
 
-        $name = $payload['room']['name'] 
-            ?? $payload['sender']['name'] 
-            ?? $payload['sender_name'] 
-            ?? $payload['data']['sender']['name'] 
-            ?? $payload['data']['sender_name'] 
-            ?? $payload['data']['customer']['name'] 
-            ?? 'WhatsApp Customer';
-
         $messageId = $payload['message_id'] 
             ?? $payload['id'] 
             ?? $payload['data']['id'] 
@@ -110,9 +102,8 @@ class QontakWebhookController extends Controller
             $eventType = $payload['data_event'];
         }
 
-        // We only process customer messages (incoming)
-        // If event type is status_message or others, we can log and return success
-        if ($eventType && $eventType !== 'receive_message_from_customer') {
+        // We process customer messages AND agent messages (sync phone replies)
+        if ($eventType !== 'receive_message_from_customer' && $eventType !== 'receive_message_from_agent') {
             Log::info('Qontak Webhook: Event ' . $eventType . ' skipped.');
             return response()->json(['status' => 'ignored'], 200);
         }
@@ -121,6 +112,32 @@ class QontakWebhookController extends Controller
             Log::warning('Qontak Webhook: phone_number not found in payload.');
             return response()->json(['status' => 'error', 'message' => 'phone_number not found'], 200);
         }
+
+        // Resolve names appropriately
+        $customerName = $payload['room']['name'] 
+            ?? $payload['data']['room']['name'] 
+            ?? null;
+
+        if (!$customerName && $eventType === 'receive_message_from_customer') {
+            $customerName = $payload['sender']['name'] 
+                ?? $payload['data']['sender']['name'] 
+                ?? $payload['sender_name'] 
+                ?? $payload['data']['sender_name'] 
+                ?? $payload['data']['customer']['name'] 
+                ?? 'WhatsApp Customer';
+        }
+
+        if (!$customerName) {
+            $customerName = 'WhatsApp Customer';
+        }
+
+        $senderName = $payload['sender']['name'] 
+            ?? $payload['data']['sender']['name'] 
+            ?? $payload['sender_name'] 
+            ?? $payload['data']['sender_name'] 
+            ?? 'WhatsApp User';
+
+        $senderType = $eventType === 'receive_message_from_agent' ? 'agent' : 'customer';
 
         try {
             // Standardize phone number for lookup (digits only)
@@ -131,44 +148,65 @@ class QontakWebhookController extends Controller
             $existingPending = PendingCustomer::where('phone_number', 'LIKE', '%' . $cleanPhone . '%')->first();
 
             if ($existingSale) {
-                $name = $existingSale->customer_name;
+                $customerName = $existingSale->customer_name;
             } elseif ($existingPending) {
-                $name = $existingPending->name;
+                $customerName = $existingPending->name;
             }
 
             // Find or create chat room
             $chat = Chat::where('room_id', $roomId)->first();
 
             if ($chat) {
+                // If it is from customer, increment unread. If it is from agent, reset unread count.
+                $newUnread = $eventType === 'receive_message_from_customer' ? ($chat->unread_count + 1) : 0;
+                
                 $chat->update([
-                    'customer_name' => $name,
+                    'customer_name' => $customerName,
                     'phone_number' => $phone,
                     'last_message' => $text,
                     'last_message_time' => now(),
-                    'unread_count' => $chat->unread_count + 1,
+                    'unread_count' => $newUnread,
                 ]);
             } else {
                 $chat = Chat::create([
                     'room_id' => $roomId,
-                    'customer_name' => $name,
+                    'customer_name' => $customerName,
                     'phone_number' => $phone,
                     'last_message' => $text,
                     'last_message_time' => now(),
-                    'unread_count' => 1,
+                    'unread_count' => $eventType === 'receive_message_from_customer' ? 1 : 0,
                 ]);
             }
 
-            // Save message log
-            ChatMessage::create([
-                'chat_id' => $chat->id,
-                'message_id' => $messageId,
-                'sender_type' => 'customer',
-                'sender_name' => $name,
-                'message_type' => $messageType,
-                'message_content' => $messageContent,
-            ]);
+            // Save message log with duplicate prevention for agent replies sent from CRM dashboard
+            $duplicate = false;
+            if ($senderType === 'agent') {
+                $existingMsg = ChatMessage::where('chat_id', $chat->id)
+                    ->where('sender_type', 'agent')
+                    ->where('message_content', $messageContent)
+                    ->where('created_at', '>=', now()->subSeconds(15))
+                    ->first();
+                
+                if ($existingMsg) {
+                    $duplicate = true;
+                    if (empty($existingMsg->message_id)) {
+                        $existingMsg->update(['message_id' => $messageId]);
+                    }
+                }
+            }
 
-            Log::info("Qontak Webhook: Message from customer '{$name}' processed successfully. Room ID: {$roomId}");
+            if (!$duplicate) {
+                ChatMessage::create([
+                    'chat_id' => $chat->id,
+                    'message_id' => $messageId,
+                    'sender_type' => $senderType,
+                    'sender_name' => $senderName,
+                    'message_type' => $messageType,
+                    'message_content' => $messageContent,
+                ]);
+            }
+
+            Log::info("Qontak Webhook: Message from {$senderType} '{$senderName}' processed successfully. Room ID: {$roomId}");
 
             return response()->json(['status' => 'success'], 200);
 
