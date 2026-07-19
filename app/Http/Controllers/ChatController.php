@@ -180,12 +180,30 @@ class ChatController extends Controller
     }
 
     /**
-     * Delete the chat room and its messages.
+     * Delete the chat room, its messages, and any locally stored image files.
      */
     public function destroy(Chat $chat)
     {
         try {
-            // Delete all associated messages first
+            // First, delete locally stored attachment files from storage
+            $imageMessages = $chat->messages()
+                ->where('message_type', 'image')
+                ->get(['message_content']);
+
+            foreach ($imageMessages as $msg) {
+                $url = $msg->message_content;
+                // Only delete files hosted on our own server (not external CDN URLs like qontak.com)
+                if ($url && str_contains($url, '/storage/attachments/')) {
+                    // Extract relative path from the URL: storage/attachments/filename.jpg
+                    $relativePath = 'attachments/' . basename(parse_url($url, PHP_URL_PATH));
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($relativePath)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($relativePath);
+                        Log::info("ChatController: Deleted attachment file: {$relativePath}");
+                    }
+                }
+            }
+
+            // Delete all associated messages
             $chat->messages()->delete();
             
             // Delete the chat room
@@ -193,7 +211,7 @@ class ChatController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Chat berhasil dihapus.'
+                'message' => 'Chat beserta file lampiran berhasil dihapus.'
             ]);
         } catch (\Exception $e) {
             Log::error('ChatController: Error deleting chat room: ' . $e->getMessage());
