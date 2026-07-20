@@ -84,13 +84,31 @@ class ChatController extends Controller
         }
 
         $replyToMessageId = $request->input('reply_to_message_id');
+        $replyToSenderName = $request->input('reply_to_message_sender_name');
+        $replyToContent = $request->input('reply_to_message_content');
+
+        // Prepare text formatted for the customer's phone/DM inbox
+        $textToSendToQontak = $content;
+        if ($messageType === 'text' && !empty($replyToContent)) {
+            $cleanQuoteContent = \Illuminate\Support\Str::limit(strip_tags($replyToContent), 90);
+            $senderName = !empty($replyToSenderName) ? $replyToSenderName : 'Pesan';
+            
+            // Check if room is a numeric phone number (WhatsApp) vs Social Media (Instagram/Facebook)
+            $isPhoneNumber = !empty($chat->phone_number) && preg_match('/^[0-9+]+$/', trim($chat->phone_number));
+            
+            if ($isPhoneNumber) {
+                $textToSendToQontak = "> *[{$senderName}]*: _\"{$cleanQuoteContent}\"_\n\n" . $content;
+            } else {
+                $textToSendToQontak = "Replying to [{$senderName}]: \"{$cleanQuoteContent}\"\n\n" . $content;
+            }
+        }
 
         Log::info("ChatController: Attempting to send reply to Room {$chat->room_id} (type: {$messageType}, replyTo: {$replyToMessageId})");
 
         // Call Qontak Service to send message
         $result = $this->qontakService->sendWhatsappReply(
             $chat->room_id,
-            $content,
+            $textToSendToQontak,
             $messageType,
             false,
             $localFilePath,
