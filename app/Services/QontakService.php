@@ -350,7 +350,7 @@ class QontakService
      * @param bool $isRetry Internal flag to avoid infinite recursion
      * @return array [ 'success' => bool, 'response' => array|string|null, 'error' => string|null ]
      */
-    public function sendWhatsappReply(string $roomId, string $text, string $messageType = 'text', bool $isRetry = false, ?string $localFilePath = null): array
+    public function sendWhatsappReply(string $roomId, string $text, string $messageType = 'text', bool $isRetry = false, ?string $localFilePath = null, ?string $replyToMessageId = null): array
     {
         $settings = $this->getSettings();
         
@@ -376,11 +376,17 @@ class QontakService
                 ->timeout(30);
 
             if ($messageType === 'image' && $localFilePath && file_exists($localFilePath)) {
+                $postParams = [
+                    'room_id' => $roomId,
+                    'type'    => 'image'
+                ];
+                if ($replyToMessageId) {
+                    $postParams['context'] = [
+                        'message_id' => $replyToMessageId
+                    ];
+                }
                 $response = $request->attach('file', file_get_contents($localFilePath), basename($localFilePath))
-                    ->post($url, [
-                        'room_id' => $roomId,
-                        'type'    => 'image'
-                    ]);
+                    ->post($url, $postParams);
             } else {
                 $payload = [
                     'room_id' => $roomId,
@@ -390,6 +396,11 @@ class QontakService
                     $payload['file_url'] = $text; // fallback
                 } else {
                     $payload['text'] = $text;
+                }
+                if ($replyToMessageId) {
+                    $payload['context'] = [
+                        'message_id' => $replyToMessageId
+                    ];
                 }
                 $response = $request->post($url, $payload);
             }
@@ -408,7 +419,7 @@ class QontakService
                 
                 if ($refreshResult['success']) {
                     Log::info('Token refresh succeeded. Retrying WhatsApp reply...');
-                    return $this->sendWhatsappReply($roomId, $text, $messageType, true, $localFilePath);
+                    return $this->sendWhatsappReply($roomId, $text, $messageType, true, $localFilePath, $replyToMessageId);
                 }
             }
 

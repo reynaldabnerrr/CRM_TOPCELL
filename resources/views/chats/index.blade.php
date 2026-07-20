@@ -273,51 +273,84 @@
                                         <span class="bg-indigo-50 border border-indigo-100/60 text-indigo-600/90 text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
                                             Awal obrolan dengan customer dimulai
                                         </span>
-                                    </div>
-
-                                    <template x-for="msg in messages" :key="msg.id">
-                                        <div class="flex flex-col" :class="msg.sender_type === 'agent' ? 'items-end' : 'items-start'">
-                                            <!-- Message Bubble -->
-                                            <div :class="msg.sender_type === 'agent' 
-                                                    ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-2xl rounded-tr-none shadow-sm' 
-                                                    : 'bg-white text-slate-800 border border-slate-100 rounded-2xl rounded-tl-none shadow-sm'" 
-                                                 class="max-w-[70%] px-3.5 py-2.5 text-sm leading-relaxed relative animate-fadeIn"
+                                    </div>                                    <template x-for="msg in messages" :key="msg.id">
+                                        <div 
+                                            class="flex flex-col transition-all duration-300 rounded-2xl" 
+                                            :class="msg.sender_type === 'agent' ? 'items-end' : 'items-start'"
+                                            :id="'msg-' + (msg.message_id || msg.id)"
+                                        >
+                                            <div 
+                                                class="flex items-center space-x-2 group max-w-[75%]" 
+                                                :class="msg.sender_type === 'agent' ? 'flex-row-reverse space-x-reverse' : 'flex-row'"
                                             >
-                                                <!-- Text Message -->
-                                                <template x-if="msg.message_type === 'text'">
-                                                    <span class="whitespace-pre-wrap select-text text-sm" x-html="formatMessageContent(msg.message_content)"></span>
-                                                </template>
-                                                
-                                                <!-- Image Message -->
-                                                <template x-if="msg.message_type === 'image'">
-                                                    <div class="space-y-1">
-                                                        <img :src="msg.message_content" class="max-w-full max-h-64 rounded-xl cursor-zoom-in border border-slate-100 object-cover shadow-sm transition hover:brightness-95" @click="window.open(msg.message_content, '_blank')">
+                                                <!-- Message Bubble -->
+                                                <div :class="msg.sender_type === 'agent' 
+                                                        ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-2xl rounded-tr-none shadow-sm' 
+                                                        : 'bg-white text-slate-800 border border-slate-100 rounded-2xl rounded-tl-none shadow-sm'" 
+                                                     class="px-3.5 py-2.5 text-sm leading-relaxed relative animate-fadeIn"
+                                                >
+                                                    <!-- Quoted Message Preview inside bubble -->
+                                                    <template x-if="msg.reply_to_message_id">
+                                                        <div 
+                                                            @click="scrollToMessage(msg.reply_to_message_id)"
+                                                            class="mb-2 p-2 rounded-lg border-l-4 text-xs cursor-pointer select-none transition hover:opacity-90 flex flex-col space-y-0.5"
+                                                            :class="msg.sender_type === 'agent' 
+                                                                ? 'bg-indigo-950/25 border-indigo-300 text-indigo-100' 
+                                                                : 'bg-slate-100 border-indigo-600 text-slate-600'"
+                                                        >
+                                                            <span class="font-extrabold text-[10px]" :class="msg.sender_type === 'agent' ? 'text-white' : 'text-indigo-600'" x-text="msg.reply_to_message_sender_name"></span>
+                                                            <span class="truncate max-w-[200px]" x-text="msg.reply_to_message_content"></span>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Text Message -->
+                                                    <template x-if="msg.message_type === 'text'">
+                                                        <span class="whitespace-pre-wrap select-text text-sm" x-html="formatMessageContent(msg.message_content)"></span>
+                                                    </template>
+                                                    
+                                                    <!-- Image Message -->
+                                                    <template x-if="msg.message_type === 'image'">
+                                                        <div class="space-y-1">
+                                                            <img :src="msg.message_content" class="max-w-full max-h-64 rounded-xl cursor-zoom-in border border-slate-100 object-cover shadow-sm transition hover:brightness-95" @click="window.open(msg.message_content, '_blank')">
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Other Attachment/File Type -->
+                                                    <template x-if="msg.message_type !== 'text' && msg.message_type !== 'image'">
+                                                        <a :href="msg.message_content" target="_blank" class="flex items-center space-x-2 font-semibold hover:underline" :class="msg.sender_type === 'agent' ? 'text-indigo-100' : 'text-indigo-600'">
+                                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                            <span x-text="'File ' + msg.message_type"></span>
+                                                        </a>
+                                                    </template>
+
+                                                    <!-- Nested Metadata Inside Bubble (Bottom Right) -->
+                                                    <div class="flex items-center justify-end space-x-1 mt-1.5 text-[9px] select-none" :class="msg.sender_type === 'agent' ? 'text-indigo-200' : 'text-slate-400'">
+                                                        <template x-if="msg.sender_type === 'agent'">
+                                                            <span class="font-bold mr-1" x-text="msg.sender_name"></span>
+                                                        </template>
+                                                        <span x-text="formatTime(msg.created_at)"></span>
+                                                        <template x-if="msg.sender_type === 'agent'">
+                                                            <svg class="h-3.5 w-3.5 text-indigo-200 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M17 5L9.5 12.5L6 9" />
+                                                                <path d="M22 5L14.5 12.5L13 11" />
+                                                            </svg>
+                                                        </template>
                                                     </div>
-                                                </template>
-
-                                                <!-- Other Attachment/File Type -->
-                                                <template x-if="msg.message_type !== 'text' && msg.message_type !== 'image'">
-                                                    <a :href="msg.message_content" target="_blank" class="flex items-center space-x-2 font-semibold hover:underline" :class="msg.sender_type === 'agent' ? 'text-indigo-100' : 'text-indigo-600'">
-                                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                        </svg>
-                                                        <span x-text="'File ' + msg.message_type"></span>
-                                                    </a>
-                                                </template>
-
-                                                <!-- Nested Metadata Inside Bubble (Bottom Right) -->
-                                                <div class="flex items-center justify-end space-x-1 mt-1.5 text-[9px] select-none" :class="msg.sender_type === 'agent' ? 'text-indigo-200' : 'text-slate-400'">
-                                                    <template x-if="msg.sender_type === 'agent'">
-                                                        <span class="font-bold mr-1" x-text="msg.sender_name"></span>
-                                                    </template>
-                                                    <span x-text="formatTime(msg.created_at)"></span>
-                                                    <template x-if="msg.sender_type === 'agent'">
-                                                        <svg class="h-3.5 w-3.5 text-indigo-200 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                                            <path d="M17 5L9.5 12.5L6 9" />
-                                                            <path d="M22 5L14.5 12.5L13 11" />
-                                                        </svg>
-                                                    </template>
                                                 </div>
+
+                                                <!-- Reply Action Button -->
+                                                <button 
+                                                    type="button" 
+                                                    @click="replyToMessage = msg"
+                                                    class="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all duration-150 active:scale-90 flex-shrink-0"
+                                                    title="Balas pesan"
+                                                >
+                                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
                                     </template>
@@ -341,7 +374,27 @@
 
                 <!-- Input Bar (Fixed Bottom) -->
                 <template x-if="activeRoom">
-                    <div class="p-3 border-t border-slate-100 bg-white flex-shrink-0 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.015)]">
+                    <div class="p-3 border-t border-slate-100 bg-white flex-shrink-0 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.015)] flex flex-col space-y-2">
+                        <!-- Reply Message Preview (WhatsApp-style) -->
+                        <template x-if="replyToMessage">
+                            <div class="px-3.5 py-2 bg-slate-50 border-l-4 border-indigo-600 rounded-lg flex items-center justify-between animate-slideUp">
+                                <div class="flex flex-col text-xs space-y-0.5">
+                                    <span class="font-extrabold text-indigo-600" x-text="'Membalas ' + replyToMessage.sender_name"></span>
+                                    <span class="text-slate-500 truncate max-w-[280px] sm:max-w-[450px]" x-text="replyToMessage.message_type === 'image' ? '[Gambar]' : replyToMessage.message_content"></span>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    @click="replyToMessage = null"
+                                    class="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition-all duration-150 active:scale-90"
+                                    title="Batalkan Balas"
+                                >
+                                    <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+
                         <!-- Hidden inputs for media upload and camera capture -->
                         <input type="file" id="chat-file-input" @change="triggerFileUpload" accept="image/*" class="hidden">
                         <input type="file" id="chat-camera-input" @change="triggerFileUpload" accept="image/*" capture="environment" class="hidden">
@@ -658,6 +711,7 @@
                 activeRoom: null,
                 messages: [],
                 newMessage: '',
+                replyToMessage: null,
                 searchQuery: '',
                 loadingMessages: false,
                 sending: false,
@@ -738,6 +792,7 @@
                 },
 
                 async selectRoom(room) {
+                    this.replyToMessage = null;
                     this.activeRoom = room;
                     this.showConversationOnMobile = true;
 
@@ -808,6 +863,13 @@
                     const textarea = document.querySelector('form textarea');
                     if (textarea) textarea.style.height = 'auto';
 
+                    const payload = { message: textToSend };
+                    if (this.replyToMessage) {
+                        payload.reply_to_message_id = this.replyToMessage.message_id || '';
+                        payload.reply_to_message_content = this.replyToMessage.message_content || '';
+                        payload.reply_to_message_sender_name = this.replyToMessage.sender_name || '';
+                    }
+
                     try {
                         const url = '{{ route("chats.send", ":id") }}'.replace(':id', this.activeRoom.id);
                         const res = await fetch(url, {
@@ -816,7 +878,7 @@
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             },
-                            body: JSON.stringify({ message: textToSend })
+                            body: JSON.stringify(payload)
                         });
 
                         const data = await res.json();
@@ -843,6 +905,7 @@
                         setTimeout(() => { this.errorMessage = ''; }, 5000);
                     } finally {
                         this.sending = false;
+                        this.replyToMessage = null;
                     }
                 },
 
@@ -1024,6 +1087,12 @@
                     const formData = new FormData();
                     formData.append('file', this.selectedFile);
 
+                    if (this.replyToMessage) {
+                        formData.append('reply_to_message_id', this.replyToMessage.message_id || '');
+                        formData.append('reply_to_message_content', this.replyToMessage.message_content || '');
+                        formData.append('reply_to_message_sender_name', this.replyToMessage.sender_name || '');
+                    }
+
                     try {
                         const url = '{{ route("chats.send", ":id") }}'.replace(':id', this.activeRoom.id);
                         const res = await fetch(url, {
@@ -1048,7 +1117,20 @@
                         setTimeout(() => { this.errorMessage = ''; }, 5000);
                     } finally {
                         this.sending = false;
+                        this.replyToMessage = null;
                         this.cancelUpload();
+                    }
+                },
+
+                scrollToMessage(messageId) {
+                    if (!messageId) return;
+                    const el = document.getElementById('msg-' + messageId);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('bg-indigo-50', 'ring-2', 'ring-indigo-400');
+                        setTimeout(() => {
+                            el.classList.remove('bg-indigo-50', 'ring-2', 'ring-indigo-400');
+                        }, 2000);
                     }
                 },
 

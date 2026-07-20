@@ -18,6 +18,9 @@ class ChatMessage extends Model
         'sender_name',
         'message_type',
         'message_content',
+        'reply_to_message_id',
+        'reply_to_message_content',
+        'reply_to_message_sender_name',
     ];
 
     public function chat()

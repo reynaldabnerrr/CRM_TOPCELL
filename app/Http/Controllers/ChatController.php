@@ -62,6 +62,9 @@ class ChatController extends Controller
         $request->validate([
             'message' => 'required_without:file|nullable|string',
             'file' => 'required_without:message|nullable|file|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'reply_to_message_id' => 'nullable|string',
+            'reply_to_message_content' => 'nullable|string',
+            'reply_to_message_sender_name' => 'nullable|string',
         ]);
 
         $messageType = 'text';
@@ -80,10 +83,19 @@ class ChatController extends Controller
             $content = $request->input('message');
         }
 
-        Log::info("ChatController: Attempting to send reply to Room {$chat->room_id} (type: {$messageType})");
+        $replyToMessageId = $request->input('reply_to_message_id');
+
+        Log::info("ChatController: Attempting to send reply to Room {$chat->room_id} (type: {$messageType}, replyTo: {$replyToMessageId})");
 
         // Call Qontak Service to send message
-        $result = $this->qontakService->sendWhatsappReply($chat->room_id, $content, $messageType, false, $localFilePath);
+        $result = $this->qontakService->sendWhatsappReply(
+            $chat->room_id,
+            $content,
+            $messageType,
+            false,
+            $localFilePath,
+            $replyToMessageId
+        );
 
         if ($result['success']) {
             try {
@@ -94,6 +106,9 @@ class ChatController extends Controller
                     'sender_name' => auth()->user()->name,
                     'message_type' => $messageType,
                     'message_content' => $content,
+                    'reply_to_message_id' => $replyToMessageId,
+                    'reply_to_message_content' => $request->input('reply_to_message_content'),
+                    'reply_to_message_sender_name' => $request->input('reply_to_message_sender_name'),
                 ]);
 
                 // Update chat room last message info

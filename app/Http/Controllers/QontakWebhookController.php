@@ -139,7 +139,30 @@ class QontakWebhookController extends Controller
 
         $senderType = $eventType === 'receive_message_from_agent' ? 'agent' : 'customer';
 
+        $context = $payload['context'] 
+            ?? $payload['data']['context'] 
+            ?? $payload['data']['message']['context'] 
+            ?? null;
+
+        $replyToMessageId = null;
+        $replyToMessageContent = null;
+        $replyToMessageSenderName = null;
+
         try {
+            // Resolve context if present
+            if ($context && !empty($context['id'])) {
+                $replyToMessageId = $context['id'];
+                
+                $parentMsg = ChatMessage::where('message_id', $replyToMessageId)->first();
+                if ($parentMsg) {
+                    $replyToMessageContent = $parentMsg->message_content;
+                    $replyToMessageSenderName = $parentMsg->sender_name;
+                } else {
+                    $replyToMessageContent = 'Pesan sebelumnya';
+                    $replyToMessageSenderName = $eventType === 'receive_message_from_customer' ? 'Agent' : 'Customer';
+                }
+            }
+
             // Standardize phone number for lookup (digits only)
             $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -190,7 +213,12 @@ class QontakWebhookController extends Controller
                 if ($existingMsg) {
                     $duplicate = true;
                     if (empty($existingMsg->message_id)) {
-                        $existingMsg->update(['message_id' => $messageId]);
+                        $existingMsg->update([
+                            'message_id' => $messageId,
+                            'reply_to_message_id' => $replyToMessageId,
+                            'reply_to_message_content' => $replyToMessageContent,
+                            'reply_to_message_sender_name' => $replyToMessageSenderName,
+                        ]);
                     }
                 }
             }
@@ -203,6 +231,9 @@ class QontakWebhookController extends Controller
                     'sender_name' => $senderName,
                     'message_type' => $messageType,
                     'message_content' => $messageContent,
+                    'reply_to_message_id' => $replyToMessageId,
+                    'reply_to_message_content' => $replyToMessageContent,
+                    'reply_to_message_sender_name' => $replyToMessageSenderName,
                 ]);
             }
 
