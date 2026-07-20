@@ -102,21 +102,28 @@ class QontakWebhookController extends Controller
             $eventType = $payload['data_event'];
         }
 
-        // We process customer messages AND agent messages (sync phone replies)
+        // We process customer messages AND agent messages (sync phone/app replies)
         if ($eventType !== 'receive_message_from_customer' && $eventType !== 'receive_message_from_agent') {
             Log::info('Qontak Webhook: Event ' . $eventType . ' skipped.');
             return response()->json(['status' => 'ignored'], 200);
         }
 
+        // Find existing chat room by room_id first
+        $chat = Chat::where('room_id', $roomId)->first();
+
+        // Fallback phone number for non-phone channels (Instagram / Facebook Messenger / Live Chat)
         if (!$phone) {
-            Log::warning('Qontak Webhook: phone_number not found in payload.');
-            return response()->json(['status' => 'error', 'message' => 'phone_number not found'], 200);
+            $phone = $chat->phone_number ?? ($payload['room']['channel'] ?? 'Social Media');
         }
 
-        // Resolve names appropriately
+        // Resolve customer name appropriately
         $customerName = $payload['room']['name'] 
             ?? $payload['data']['room']['name'] 
             ?? null;
+
+        if (!$customerName && $chat) {
+            $customerName = $chat->customer_name;
+        }
 
         if (!$customerName && $eventType === 'receive_message_from_customer') {
             $customerName = $payload['sender']['name'] 
@@ -124,18 +131,18 @@ class QontakWebhookController extends Controller
                 ?? $payload['sender_name'] 
                 ?? $payload['data']['sender_name'] 
                 ?? $payload['data']['customer']['name'] 
-                ?? 'WhatsApp Customer';
+                ?? 'Customer';
         }
 
         if (!$customerName) {
-            $customerName = 'WhatsApp Customer';
+            $customerName = 'Customer';
         }
 
         $senderName = $payload['sender']['name'] 
             ?? $payload['data']['sender']['name'] 
             ?? $payload['sender_name'] 
             ?? $payload['data']['sender_name'] 
-            ?? 'WhatsApp User';
+            ?? 'User';
 
         $senderType = $eventType === 'receive_message_from_agent' ? 'agent' : 'customer';
 
@@ -166,14 +173,16 @@ class QontakWebhookController extends Controller
             // Standardize phone number for lookup (digits only)
             $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
-            // Attempt to resolve customer name from Sales or Pending Customers
-            $existingSale = Sale::where('phone_number', 'LIKE', '%' . $cleanPhone . '%')->first();
-            $existingPending = PendingCustomer::where('phone_number', 'LIKE', '%' . $cleanPhone . '%')->first();
+            if (!empty($cleanPhone)) {
+                // Attempt to resolve customer name from Sales or Pending Customers
+                $existingSale = Sale::where('phone_number', 'LIKE', '%' . $cleanPhone . '%')->first();
+                $existingPending = PendingCustomer::where('phone_number', 'LIKE', '%' . $cleanPhone . '%')->first();
 
-            if ($existingSale) {
-                $customerName = $existingSale->customer_name;
-            } elseif ($existingPending) {
-                $customerName = $existingPending->name;
+                if ($existingSale) {
+                    $customerName = $existingSale->customer_name;
+                } elseif ($existingPending) {
+                    $customerName = $existingPending->name;
+                }
             }
 
             // Find or create chat room
