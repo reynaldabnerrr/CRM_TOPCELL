@@ -84,23 +84,13 @@ class ChatController extends Controller
         }
 
         $replyToMessageId = $request->input('reply_to_message_id');
-        $replyToSenderName = $request->input('reply_to_message_sender_name');
-        $replyToContent = $request->input('reply_to_message_content');
-
-        // Prepare text formatted with WhatsApp blockquote markdown for the customer's phone
-        $textToSendToQontak = $content;
-        if ($messageType === 'text' && !empty($replyToContent)) {
-            $cleanQuoteContent = \Illuminate\Support\Str::limit(strip_tags($replyToContent), 90);
-            $senderLabel = !empty($replyToSenderName) ? "*[{$replyToSenderName}]*" : "*[Pesan]*";
-            $textToSendToQontak = "> {$senderLabel}: _\"{$cleanQuoteContent}\"_\n\n" . $content;
-        }
 
         Log::info("ChatController: Attempting to send reply to Room {$chat->room_id} (type: {$messageType}, replyTo: {$replyToMessageId})");
 
         // Call Qontak Service to send message
         $result = $this->qontakService->sendWhatsappReply(
             $chat->room_id,
-            $textToSendToQontak,
+            $content,
             $messageType,
             false,
             $localFilePath,
