@@ -13,51 +13,46 @@ $accessToken = $settings->chatbot_token ?: $settings->access_token;
 $roomId = '6468612c-3695-4388-85ee-482e59f8da96';
 $url = $baseUrl . '/api/open/v1/messages/whatsapp/bot';
 
-// Fetch recent message from database for this room
-$lastMessage = App\Models\ChatMessage::where('chat_id', function($query) use ($roomId) {
-    $query->select('id')->from('chats')->where('room_id', $roomId);
-})->whereNotNull('message_id')->orderBy('id', 'desc')->first();
+// Find a message with wamid (external_id) in recent webhooks or database
+// Let's test with a real wamid
+$wamid = "wamid.HBgNNjI4NTE1NjQzMTU2MxUCABEYEjY0RDYwQjU2RDlFREI2RUUyOQA=";
+$uuid = "8e40a417-8a93-4b49-a969-713414e16686";
 
-if (!$lastMessage) {
-    echo "No message found with message_id in database.\n";
-    exit;
-}
+echo "Testing reply with WAMID: {$wamid}\n\n";
 
-echo "Testing reply with Target Message ID: {$lastMessage->message_id}\n\n";
-
-// Test 1: context.message_id (Qontak UUID)
-echo "--- TEST 1: context.message_id (UUID) ---\n";
-$payload1 = [
+// Test 4: context.message_id = WAMID
+echo "--- TEST 4: context.message_id = WAMID ---\n";
+$payload4 = [
     'room_id' => $roomId,
     'type' => 'text',
-    'text' => 'Tes reply Test 1 (context.message_id)',
+    'text' => 'Tes reply Test 4 (context.message_id = WAMID)',
     'context' => [
-        'message_id' => $lastMessage->message_id
+        'message_id' => $wamid
     ]
 ];
-$res1 = Http::withToken($accessToken)->post($url, $payload1);
-echo "Status: " . $res1->status() . " -> " . $res1->body() . "\n\n";
+$res4 = Http::withToken($accessToken)->post($url, $payload4);
+echo "Status: " . $res4->status() . " -> " . $res4->body() . "\n\n";
 
-// Test 2: reply_message_id
-echo "--- TEST 2: reply_message_id ---\n";
-$payload2 = [
+// Test 5: reply_id = WAMID
+echo "--- TEST 5: reply_id = WAMID ---\n";
+$payload5 = [
     'room_id' => $roomId,
     'type' => 'text',
-    'text' => 'Tes reply Test 2 (reply_message_id)',
-    'reply_message_id' => $lastMessage->message_id
+    'text' => 'Tes reply Test 5 (reply_id = WAMID)',
+    'reply_id' => $wamid
 ];
-$res2 = Http::withToken($accessToken)->post($url, $payload2);
-echo "Status: " . $res2->status() . " -> " . $res2->body() . "\n\n";
+$res5 = Http::withToken($accessToken)->post($url, $payload5);
+echo "Status: " . $res5->status() . " -> " . $res5->body() . "\n\n";
 
-// Test 3: reply.message_id
-echo "--- TEST 3: reply.message_id ---\n";
-$payload3 = [
+// Test 6: reply.id = UUID / WAMID
+echo "--- TEST 6: reply.id = WAMID ---\n";
+$payload6 = [
     'room_id' => $roomId,
     'type' => 'text',
-    'text' => 'Tes reply Test 3 (reply.message_id)',
+    'text' => 'Tes reply Test 6 (reply.id = WAMID)',
     'reply' => [
-        'message_id' => $lastMessage->message_id
+        'id' => $wamid
     ]
 ];
-$res3 = Http::withToken($accessToken)->post($url, $payload3);
-echo "Status: " . $res3->status() . " -> " . $res3->body() . "\n\n";
+$res6 = Http::withToken($accessToken)->post($url, $payload6);
+echo "Status: " . $res6->status() . " -> " . $res6->body() . "\n\n";
